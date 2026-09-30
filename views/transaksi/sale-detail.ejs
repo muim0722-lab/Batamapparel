@@ -1,0 +1,199 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Invoice <%= row.number %></h1>
+    <div class="sub"><%= util.dmyLong(row.date) %> · Kepada: <b><%= row.to_name || row.customer_name || '-' %></b>
+      <% if (row.project_code) { %> · Project <%= row.project_code %><% } %>
+    </div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-primary btn-sm" href="<%= url('/transaksi/penjualan/' + row.id + '/invoice') %>" target="_blank">🖨 Cetak Invoice Toko</a>
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak Ringkasan A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <% if (perm.edit) { %><a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/' + row.id + '/edit') %>">Edit</a><% } %>
+    <% if (perm.del) { %>
+      <form method="post" action="<%= url('/transaksi/penjualan/' + row.id + '/delete') %>" style="display:inline" data-confirm="Hapus invoice <%= row.number %>?">
+        <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+      </form>
+    <% } %>
+    <a class="btn btn-outline btn-sm" href="<%= url('/transaksi/penjualan') %>">← Daftar</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy"><div class="kpi-label">Total Invoice</div><div class="kpi-value"><%= util.rp(row.total) %></div><div class="kpi-sub">subtotal <%= util.rp(row.subtotal) %> · diskon <%= util.rp(row.discount) %></div></div>
+  <div class="kpi tone-green"><div class="kpi-label">Sudah Dibayar (DP + Pelunasan)</div><div class="kpi-value"><%= util.rp(row.paid) %></div><div class="kpi-sub"><%= row.payments.length %> kali pembayaran</div></div>
+  <div class="kpi tone-<%= row.sisa > 0 ? 'red' : 'green' %>"><div class="kpi-label">Sisa Tagihan</div><div class="kpi-value"><%= util.rp(row.sisa) %></div><div class="kpi-sub"><span class="badge <%= row.status === 'Lunas' ? 'b-green' : (row.status === 'Sebagian' ? 'b-amber' : 'b-red') %>"><%= row.status %></span></div></div>
+  <div class="kpi tone-purple"><div class="kpi-label">Jumlah Item</div><div class="kpi-value"><%= row.items.length %> item</div><div class="kpi-sub">total <%= util.angka(row.items.reduce(function(a, i){ return a + util.num(i.qty); }, 0)) %> pcs</div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>📋 Rincian Item</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Item</th><th class="num">Qty</th><th class="num">Harga Dasar</th><th class="num">Opsi</th><th class="num">Harga Satuan</th><th class="num">Subtotal</th></tr></thead>
+          <tbody>
+            <% if (!row.items.length) { %><tr><td colspan="7"><div class="empty">Tidak ada item.</div></td></tr><% } %>
+            <% row.items.forEach(function(it, i){ %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= it.description %><% if (it.addons) { %><div class="subtext">+ <%= it.addons %></div><% } %></td>
+                <td class="num mono"><%= util.angka(it.qty) %></td>
+                <td class="num mono"><%= util.num(it.base_price) === 0 && util.num(it.addon_total) === 0 ? util.rp(it.unit_price) : util.rp(it.base_price) %></td>
+                <td class="num mono"><%= it.addon_total > 0 ? '+' + util.angka(it.addon_total) : '-' %></td>
+                <td class="num mono"><%= util.rp(it.unit_price) %></td>
+                <td class="num mono"><%= util.rp(it.subtotal) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="6">Subtotal</td><td class="num mono"><%= util.rp(row.subtotal) %></td></tr>
+            <tr><td colspan="6">Diskon <%= util.num(row.disc_pct) > 0 ? '(' + util.angka(row.disc_pct) + '%)' : '' %></td><td class="num mono">- <%= util.rp(row.discount) %></td></tr>
+            <tr><td colspan="6">TOTAL</td><td class="num mono"><%= util.rp(row.total) %></td></tr>
+            <tr><td colspan="6">DP / Dibayar</td><td class="num mono"><%= util.rp(row.paid) %></td></tr>
+            <tr><td colspan="6">SISA</td><td class="num mono"><%= util.rp(row.sisa) %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>💳 Riwayat Pembayaran (DP / Pelunasan)</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Metode</th><th>Catatan</th><th class="num">Jumlah</th><% if (perm.del) { %><th class="no-print">Aksi</th><% } %></tr></thead>
+          <tbody>
+            <% if (!row.payments.length) { %><tr><td colspan="6"><div class="empty">Belum ada pembayaran. Catat DP di kolom kanan.</div></td></tr><% } %>
+            <% row.payments.forEach(function(b){ %>
+              <tr>
+                <td class="nowrap"><%= util.dmy(b.date) %></td>
+                <td><span class="badge <%= b.kind === 'DP' ? 'b-amber' : 'b-green' %>"><%= b.kind === 'DP' ? 'DP' : 'Pelunasan' %></span></td>
+                <td><%= b.method %></td>
+                <td><%= b.note || '-' %></td>
+                <td class="num mono"><%= util.rp(b.amount) %></td>
+                <% if (perm.del) { %>
+                  <td class="no-print">
+                    <form method="post" action="<%= url('/transaksi/penjualan/' + row.id + '/bayar/' + b.id + '/delete') %>" style="display:inline" data-confirm="Hapus pembayaran <%= util.angka(b.amount) %>?">
+                      <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                    </form>
+                  </td>
+                <% } %>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4">TOTAL DIBAYAR</td><td class="num mono"><%= util.rp(row.paid) %></td><% if (perm.del) { %><td class="no-print"></td><% } %></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <% if (perm.input && row.sisa > 0) { %>
+        <div class="card-body no-print" style="border-top:1px solid var(--line)">
+          <form method="post" action="<%= url('/transaksi/penjualan/' + row.id + '/bayar') %>">
+            <fieldset>
+              <legend>Catat Pembayaran Baru</legend>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Jenis</label>
+                  <select name="kind">
+                    <option value="Pelunasan">Pelunasan</option>
+                    <option value="DP">DP tambahan</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Jumlah (Rp)</label>
+                  <input type="text" class="money" name="amount" value="<%= util.num(row.sisa) %>" required>
+                  <div class="help">Sisa tagihan saat ini <%= util.rp(row.sisa) %>.</div>
+                </div>
+                <div class="field">
+                  <label>Tanggal</label>
+                  <input type="date" name="date" value="<%= util.todayISO() %>">
+                </div>
+                <div class="field">
+                  <label>Metode</label>
+                  <select name="method">
+                    <% METHODS.forEach(function(m){ %><option value="<%= m %>" <%= row.method === m ? 'selected' : '' %>><%= m %></option><% }); %>
+                  </select>
+                </div>
+                <div class="field span-2">
+                  <label>Catatan</label>
+                  <input type="text" name="note" placeholder="cth: transfer BCA 2 Sep">
+                </div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button class="btn btn-primary" type="submit">Simpan Pembayaran</button>
+                <label class="check"><input type="checkbox" name="catat" value="1" checked> <span>Otomatis catat ke Pemasukan</span></label>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+      <% } else if (perm.input) { %>
+        <div class="card-body no-print" style="border-top:1px solid var(--line)">
+          <div class="alert alert-success" style="margin:0"><span>✅</span><div>Invoice ini sudah <b>LUNAS</b>. Terima kasih!</div></div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>🗂 Data Invoice Toko</h3></div>
+    <div class="card-body tight">
+      <table class="tbl">
+        <tbody>
+          <tr><th style="width:38%">No. Invoice</th><td class="mono"><%= row.number %></td></tr>
+          <tr><th>Tanggal</th><td><%= util.dmyLong(row.date) %></td></tr>
+          <tr><th>Kepada</th><td><%= row.to_name || row.customer_name || '-' %></td></tr>
+          <tr><th>No. Telp</th><td><%= row.phone || row.customer_phone || '-' %></td></tr>
+          <tr><th>Marketer</th><td><%= row.market || '-' %></td></tr>
+          <tr><th>Deadline</th><td><%= row.deadline ? util.dmyLong(row.deadline) : '-' %></td></tr>
+          <tr><th>Digunakan untuk</th><td><%= row.sport || '-' %></td></tr>
+          <tr><th>Jenis bahan</th><td><%= row.fabrics || '-' %></td></tr>
+          <tr><th>Jenis sablon</th><td><%= row.prints || '-' %></td></tr>
+          <tr><th>Posisi</th><td><%= row.positions || '-' %></td></tr>
+          <tr><th>Note invoice</th><td><%= row.invoice_note || '-' %></td></tr>
+          <tr><th>Catatan internal</th><td><%= row.note || '-' %></td></tr>
+          <tr><th>Dicatat oleh</th><td><%= row.oleh || '-' %></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>💰 Pemasukan Otomatis Terkait</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th class="num">Nominal</th></tr></thead>
+          <tbody>
+            <% if (!row.incomes.length) { %><tr><td colspan="4"><div class="empty">Belum ada pemasukan tercatat dari invoice ini. Pastikan centang "Catat otomatis" saat menyimpan DP/pembayaran.</div></td></tr><% } %>
+            <% row.incomes.forEach(function(x){ %>
+              <tr>
+                <td class="nowrap"><%= util.dmy(x.date) %></td>
+                <td><%= x.category %></td>
+                <td><%= x.description %></td>
+                <td class="num mono"><%= util.rp(x.amount) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="3">TOTAL MASUK</td><td class="num mono"><%= util.rp(row.incomes.reduce(function(a, x){ return a + util.num(x.amount); }, 0)) %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info" style="margin:0">
+          <span>ℹ️</span>
+          <div><b>Invoice ≠ Pemasukan.</b> Invoice = tagihan (bisa belum dibayar). Pemasukan = uang yang benar-benar masuk. Karena itu DP dicatat sebagai pemasukan sebesar DP saja, bukan total invoice.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,51 @@
+<%- include('../partials/portal-head') %>
+<div class="portal-hello no-print">
+  <a class="portal-back" href="<%= purl('/beranda') %>">← Kembali ke daftar pesanan</a>
+  <h1 style="font-size:19px;margin:6px 0 2px">Invoice <%= row.number %></h1>
+  <div style="color:#5b6b82;font-size:13px"><%= util.dmyLong(row.date) %> · <%= row.items.length %> item</div>
+</div>
+
+<div class="portal-card no-print">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-primary" data-print="a5">🖨 Cetak / Simpan PDF (A5)</button>
+    <button class="btn btn-primary" data-print="2up">🖨 2 Invoice / lembar A4</button>
+    <a class="btn btn-light" href="<%= purl('/beranda') %>">Daftar Pesanan</a>
+  </div>
+  <p class="help" style="margin-bottom:0">Untuk menyimpan sebagai PDF: tekan tombol cetak lalu pilih tujuan <b>“Save as PDF”</b>.</p>
+</div>
+
+<div class="portal-card no-print">
+  <h2 class="portal-h2">💳 Pembayaran</h2>
+  <div class="pstat-row">
+    <div class="pstat"><div class="pstat-lbl">Total Invoice</div><div class="pstat-val" style="font-size:15px"><%= util.rp(row.total) %></div></div>
+    <div class="pstat"><div class="pstat-lbl">Sudah Dibayar</div><div class="pstat-val" style="font-size:15px"><%= util.rp(row.paid) %></div></div>
+    <div class="pstat"><div class="pstat-lbl">Sisa</div><div class="pstat-val" style="font-size:15px"><%= util.rp(sisa) %></div></div>
+  </div>
+  <div class="table-wrap" style="margin-top:14px">
+    <table class="tbl">
+      <thead><tr><th>Tanggal</th><th>Jenis</th><th class="num">Jumlah</th><th>Metode</th></tr></thead>
+      <tbody>
+        <% if (!pembayaran.length) { %><tr><td colspan="4"><div class="empty">Belum ada pembayaran tercatat.</div></td></tr><% } %>
+        <% pembayaran.forEach(function(b){ %>
+          <tr>
+            <td class="nowrap"><%= util.dmy(b.date) %></td>
+            <td><span class="badge <%= b.kind === 'DP' ? 'b-amber' : 'b-green' %>"><%= b.type %></span></td>
+            <td class="num mono"><%= util.rp(b.amount) %></td>
+            <td><%= b.method %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12.6px;color:#5b6b82;margin-bottom:0">
+    Pembayaran bisa ditransfer ke rekening yang tertera di invoice. Setelah transfer, kirim bukti ke admin kami agar segera dicatat.
+  </p>
+</div>
+
+<div class="inv-paper">
+  <div class="sheet">
+    <div class="inv-copy"><%- include('../partials/invoice', { row: row, logoSrc: logoSrc }) %></div>
+    <div class="inv-copy dupe" aria-hidden="true"><%- include('../partials/invoice', { row: row, logoSrc: logoSrc }) %></div>
+  </div>
+</div>
+<%- include('../partials/portal-foot') %>

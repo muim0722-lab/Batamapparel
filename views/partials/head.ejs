@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · <%= company %></title>
+<link rel="stylesheet" href="<%= url('/css/app.css') %>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b2545'/><text y='70' x='50' text-anchor='middle' font-size='58' fill='white' font-family='Arial' font-weight='bold'>B</text></svg>">
+</head>
+<%
+  const isOn = (p) => path === p || (p !== '/' && path.startsWith(p + '/')) || (p === '/projects' && path.startsWith('/projects'));
+  const initial = (user ? user.name : '?').trim().charAt(0).toUpperCase();
+  const alarms = typeof alarmCount === 'function' ? alarmCount() : 0;
+%>
+<body data-company="<%= company %>">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+        <div class="brand-logo"><img src="<%= logoSrc %>" alt="Logo <%= company %>"></div>
+    <div>
+      <div class="brand-name"><%= company %></div>
+      <div class="brand-sub"><%= tagline || 'Finance &amp; Project System' %></div>
+    </div>
+  </div>
+
+  <a class="nav-item <%= isOn('/dashboard') ? 'active' : '' %>" href="<%= url('/dashboard') %>"><span class="ico">📊</span> Dashboard</a>
+
+  <div class="nav-title">Produksi</div>
+  <a class="nav-item <%= isOn('/projects') ? 'active' : '' %>" href="<%= url('/projects') %>"><span class="ico">🧵</span> Tracking Project <% if (alarms) { %><span class="count"><%= alarms %></span><% } %></a>
+  <a class="nav-item <%= isOn('/master/tahapan') ? 'active' : '' %>" href="<%= url('/master/tahapan') %>"><span class="ico">🪜</span> Tahapan Project</a>
+
+  <div class="nav-title">Transaksi</div>
+  <a class="nav-item <%= isOn('/transaksi/penjualan') ? 'active' : '' %>" href="<%= url('/transaksi/penjualan') %>"><span class="ico">🧾</span> Invoice / Penjualan</a>
+  <a class="nav-item <%= isOn('/transaksi/pemasukan') ? 'active' : '' %>" href="<%= url('/transaksi/pemasukan') %>"><span class="ico">💰</span> Pemasukan</a>
+  <a class="nav-item <%= isOn('/transaksi/pembelian') ? 'active' : '' %>" href="<%= url('/transaksi/pembelian') %>"><span class="ico">📦</span> Pembelian Bahan</a>
+  <a class="nav-item <%= isOn('/transaksi/pengeluaran') ? 'active' : '' %>" href="<%= url('/transaksi/pengeluaran') %>"><span class="ico">💸</span> Pengeluaran</a>
+  <a class="nav-item <%= isOn('/transaksi/bahan-terpakai') ? 'active' : '' %>" href="<%= url('/transaksi/bahan-terpakai') %>"><span class="ico">🧶</span> Bahan Terpakai</a>
+  <a class="nav-item <%= isOn('/transaksi/petty-cash') ? 'active' : '' %>" href="<%= url('/transaksi/petty-cash') %>"><span class="ico">👛</span> Petty Cash</a>
+  <a class="nav-item <%= isOn('/transaksi/barang-rijek') ? 'active' : '' %>" href="<%= url('/transaksi/barang-rijek') %>"><span class="ico">♻️</span> Barang Rijek</a>
+
+  <div class="nav-title">Data Master</div>
+  <a class="nav-item <%= isOn('/master/customer') ? 'active' : '' %>" href="<%= url('/master/customer') %>"><span class="ico">👥</span> Customer &amp; Link Tracking</a>
+  <a class="nav-item <%= isOn('/master/supplier') ? 'active' : '' %>" href="<%= url('/master/supplier') %>"><span class="ico">🏭</span> Supplier</a>
+  <a class="nav-item <%= isOn('/master/bahan') ? 'active' : '' %>" href="<%= url('/master/bahan') %>"><span class="ico">🧵</span> Bahan &amp; Stok</a>
+  <a class="nav-item <%= isOn('/master/opsi-harga') ? 'active' : '' %>" href="<%= url('/master/opsi-harga') %>"><span class="ico">🏷️</span> Opsi Tambahan Harga</a>
+
+  <% if (canReport) { %>
+  <div class="nav-title">Laporan<% if (!canReportFin) { %> (Leader)<% } %></div>
+  <a class="nav-item <%= isOn('/laporan/penjualan') ? 'active' : '' %>" href="<%= url('/laporan/penjualan') %>"><span class="ico">🧾</span> Penjualan</a>
+  <a class="nav-item <%= isOn('/laporan/pembelian') ? 'active' : '' %>" href="<%= url('/laporan/pembelian') %>"><span class="ico">📦</span> Pembelian</a>
+  <a class="nav-item <%= isOn('/laporan/bahan') ? 'active' : '' %>" href="<%= url('/laporan/bahan') %>"><span class="ico">🏷️</span> Stok &amp; Pemakaian Bahan</a>
+  <a class="nav-item <%= isOn('/laporan/petty-cash') ? 'active' : '' %>" href="<%= url('/laporan/petty-cash') %>"><span class="ico">👛</span> Petty Cash</a>
+  <a class="nav-item <%= isOn('/laporan/rijek') ? 'active' : '' %>" href="<%= url('/laporan/rijek') %>"><span class="ico">♻️</span> Barang Rijek</a>
+  <a class="nav-item <%= isOn('/laporan/project') ? 'active' : '' %>" href="<%= url('/laporan/project') %>"><span class="ico">🧵</span> Project &amp; Margin</a>
+  <% if (canReportFin) { %>
+  <div class="nav-title">Laporan Keuangan (Owner)</div>
+  <a class="nav-item <%= path === '/laporan' ? 'active' : '' %>" href="<%= url('/laporan') %>"><span class="ico">📑</span> Ringkasan Keuangan</a>
+  <a class="nav-item <%= isOn('/laporan/laba-rugi') ? 'active' : '' %>" href="<%= url('/laporan/laba-rugi') %>"><span class="ico">📈</span> Laba Rugi</a>
+  <a class="nav-item <%= isOn('/laporan/arus-kas') ? 'active' : '' %>" href="<%= url('/laporan/arus-kas') %>"><span class="ico">🏦</span> Arus Kas</a>
+  <% } %>
+  <% } %>
+
+  <div class="nav-title">Sistem</div>
+  <a class="nav-item <%= isOn('/panduan') ? 'active' : '' %>" href="<%= url('/panduan') %>"><span class="ico">📖</span> Panduan Pemakaian</a>
+  <a class="nav-item" href="<%= url('/track') %>" target="_blank"><span class="ico">🔎</span> Halaman Tracking Customer<% if (portalOpenCount()) { %> <span class="count" style="background:#1d4ed8"><%= portalOpenCount() %></span><% } %></a>
+  <% if (perm.settings) { %><a class="nav-item <%= isOn('/master/pengaturan') ? 'active' : '' %>" href="<%= url('/master/pengaturan') %>"><span class="ico">⚙️</span> Pengaturan</a><% } %>
+  <% if (canManageUsers) { %><a class="nav-item <%= isOn('/master/user') ? 'active' : '' %>" href="<%= url('/master/user') %>"><span class="ico">🔐</span> User &amp; Hak Akses</a><% } %>
+  <a class="nav-item <%= isOn('/profil') ? 'active' : '' %>" href="<%= url('/profil') %>"><span class="ico">👤</span> Profil Saya</a>
+  <a class="nav-item" href="<%= url('/logout') %>"><span class="ico">🚪</span> Keluar</a>
+  <div class="sidebar-foot">© <%= year %> <%= company %></div>
+</aside>
+
+<div class="main">
+  <header class="topbar no-print">
+    <button class="burger" onclick="toggleNav()" aria-label="Menu">☰</button>
+    <div class="topbar-title">
+      <%= title %>
+      <small><%= company %> · Panel Keuangan &amp; Produksi</small>
+    </div>
+    <div class="topbar-actions">
+      <a class="bell" href="<%= url('/projects?only=urgent') %>" title="Project mendekati / lewat deadline">🔔<% if (alarms) { %><span class="dot"><%= alarms %></span><% } %></a>
+      <div class="user-chip">
+        <div class="avatar"><%= initial %></div>
+        <div>
+          <div style="font-weight:650;font-size:12.6px;line-height:1.2"><%= user ? user.name : '' %></div>
+          <span class="role-badge role-<%= user ? user.role : 'staff' %>"><%= user ? roleLabel(user.role) : '' %></span>
+        </div>
+      </div>
+      <a class="btn btn-light btn-sm" href="<%= url('/logout') %>">Keluar</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="print-only print-head">
+      <div class="co"><%= company %></div>
+      <div class="meta"><%= tagline %><% if (companyAddress) { %> · <%= companyAddress %><% } %><% if (companyPhone) { %> · Telp: <%= companyPhone %><% } %></div>
+      <div class="doc-title"><%= title %></div>
+      <% if (typeof p !== 'undefined' && p && p.label) { %><div class="meta">Periode: <%= p.label %><% if (!p.isAll) { %> (<%= util.dmy(p.from) %> s/d <%= util.dmy(p.to) %>)<% } %></div><% } %>
+      <% if (typeof m !== 'undefined' && m) { %><div class="meta">Dicetak oleh: <%= m.printedBy %> — <%= m.printedAt %></div><% } else if (user) { %><div class="meta">Dicetak oleh: <%= user.name %></div><% } %>
+    </div>

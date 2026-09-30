@@ -1,0 +1,151 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Opsi Tambahan Harga</h1>
+    <div class="sub">Tambahan biaya per pcs yang bisa dicentang langsung di form invoice (mis. XXL, lengan panjang, jenis kerah)</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblAddons','opsi-tambahan-harga',{title:'Opsi Tambahan Harga',sheet:'Opsi Harga',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/baru') %>">Coba di Invoice Baru</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="alert alert-info no-print">
+  <span>ℹ️</span>
+  <div>
+    Opsi di bawah ini muncul sebagai pilihan di tiap baris item invoice. Contoh: harga jersey Rp 125.000, customer pilih <b>Ukuran XXL</b> (+10.000) dan <b>Lengan Panjang</b> (+15.000) → harga satuan otomatis jadi <b>Rp 150.000</b> dan rinciannya ikut tercetak di invoice.
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <% if (perm.master) { %>
+  <div class="card">
+    <div class="card-head"><h3>➕ Tambah / Edit Opsi</h3></div>
+    <div class="card-body">
+      <form method="post" action="<%= url('/master/opsi-harga/save') %>" id="addonForm">
+        <input type="hidden" name="id" id="a_id" value="0">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Nama Opsi <span class="req">*</span></label>
+            <input type="text" name="name" id="a_name" required placeholder="cth: Ukuran XXL">
+          </div>
+          <div class="field">
+            <label>Tambahan Harga per pcs (Rp) <span class="req">*</span></label>
+            <input type="text" class="money" name="amount" id="a_amount" required placeholder="0">
+          </div>
+          <div class="field">
+            <label>Kelompok</label>
+            <input type="text" name="category" id="a_category" list="katList" placeholder="Ukuran / Lengan / Kerah">
+            <datalist id="katList"><option value="Ukuran"></option><option value="Lengan"></option><option value="Kerah"></option><option value="Lainnya"></option></datalist>
+          </div>
+          <div class="field">
+            <label>Urutan Tampil</label>
+            <input type="number" name="sort_order" id="a_sort" placeholder="otomatis">
+          </div>
+          <div class="field">
+            <label class="check"><input type="checkbox" name="active" id="a_active" value="1" checked> <span>Aktif (muncul di form invoice)</span></label>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-primary" type="submit">Simpan Opsi</button>
+          <button class="btn btn-outline" type="button" onclick="resetAddon()">Form Baru</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <% } else { %>
+  <div class="card"><div class="card-body"><p class="subtext">Hanya role dengan akses data master (Owner/Leader/Admin) yang bisa mengubah opsi harga.</p></div></div>
+  <% } %>
+
+  <div class="card">
+    <div class="card-head"><h3>🧮 Simulasi Harga</h3></div>
+    <div class="card-body">
+      <p class="subtext" style="margin-top:0">Contoh perhitungan otomatis di invoice:</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Harga dasar jersey (Rp)</label>
+          <input type="text" class="money" id="sim_base" value="125000" oninput="simulate()">
+        </div>
+        <div class="field">
+          <label>Qty</label>
+          <input type="number" id="sim_qty" value="24" oninput="simulate()">
+        </div>
+      </div>
+      <div class="opt-grid" style="margin-top:10px">
+        <% rows.filter(function(a){ return a.active; }).forEach(function(a){ %>
+          <label class="opt"><input type="checkbox" class="sim-chk" data-amount="<%= util.num(a.amount) %>" onchange="simulate()"> <span><%= a.name %> (+<%= util.angka(a.amount) %>)</span></label>
+        <% }); %>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tbody>
+          <tr><th>Harga satuan jadi</th><td class="num mono" id="sim_unit">Rp 0</td></tr>
+          <tr><th>Total (<span id="sim_qty_lbl">0</span> pcs)</th><td class="num mono" id="sim_total">Rp 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblAddons">
+        <thead><tr><th>#</th><th>Nama Opsi</th><th>Kelompok</th><th class="num">Tambahan / pcs</th><th>Status</th><th class="num">Dipakai di</th><th class="no-export no-print">Aksi</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr class="no-export"><td colspan="7"><div class="empty">Belum ada opsi tambahan harga.</div></td></tr><% } %>
+        <% rows.forEach(function(a, i){ %>
+          <tr data-row='<%= JSON.stringify({ id: a.id, name: a.name, amount: util.num(a.amount), category: a.category, sort_order: a.sort_order, active: a.active }).replace(/'/g, "&#39;") %>'>
+            <td class="mono"><%= i + 1 %></td>
+            <td><b><%= a.name %></b></td>
+            <td><%= a.category || '-' %></td>
+            <td class="num mono" data-num="<%= util.num(a.amount) %>">+ <%= util.rp(a.amount) %></td>
+            <td><% if (a.active) { %><span class="badge b-green">Aktif</span><% } else { %><span class="badge b-grey">Nonaktif</span><% } %></td>
+            <td class="num mono"><%= a.dipakai %> invoice</td>
+            <td class="no-export no-print nowrap">
+              <% if (perm.master) { %><button class="btn btn-outline btn-sm" type="button" onclick="editAddon(this)">Edit</button><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/master/opsi-harga/' + a.id + '/delete') %>" style="display:inline" data-confirm="Hapus opsi <%= a.name %>? Invoice yang sudah tercetak tidak berubah.">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function editAddon(btn) {
+    const d = JSON.parse(btn.closest('tr').getAttribute('data-row'));
+    document.getElementById('a_id').value = d.id;
+    document.getElementById('a_name').value = d.name;
+    document.getElementById('a_amount').value = window.fmtRp(d.amount).replace('Rp ', '');
+    document.getElementById('a_amount').value = d.amount ? String(d.amount).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+    document.getElementById('a_category').value = d.category || '';
+    document.getElementById('a_sort').value = d.sort_order || '';
+    document.getElementById('a_active').checked = !!d.active;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetAddon() {
+    document.getElementById('addonForm').reset();
+    document.getElementById('a_id').value = 0;
+    document.getElementById('a_active').checked = true;
+  }
+  function simulate() {
+    const base = window.toNumber(document.getElementById('sim_base').value);
+    const qty = window.toNumber(document.getElementById('sim_qty').value);
+    let extra = 0;
+    document.querySelectorAll('.sim-chk:checked').forEach(c => { extra += window.toNumber(c.getAttribute('data-amount')); });
+    const unit = base + extra;
+    document.getElementById('sim_unit').textContent = window.fmtRp(unit);
+    document.getElementById('sim_total').textContent = window.fmtRp(unit * qty);
+    document.getElementById('sim_qty_lbl').textContent = qty;
+  }
+  window.addEventListener('load', simulate);
+</script>
+<%- include('../partials/foot') %>

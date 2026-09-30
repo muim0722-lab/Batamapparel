@@ -1,0 +1,75 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Buku Petty Cash</h1>
+    <div class="sub"><%= m.company %> · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4 Portrait</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ Cetak A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblPettyRep','laporan-petty-cash-<%= p.from %>-sd-<%= p.to %>',{title:'Buku Petty Cash',period:'<%= p.label %>',sheet:'Petty Cash',by:'<%= user.name %>'})">⬇ Excel</button>
+    <% if (canReportFin) { %><a class="btn btn-light btn-sm" href="<%= url('/laporan') + qs({}) %>">Semua Laporan</a><% } %>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form class="filters no-print" method="get" action="<%= url('/laporan/petty-cash') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy"><div class="kpi-label">Saldo Awal</div><div class="kpi-value"><%= util.rp(opening) %></div><div class="kpi-sub">awal <%= p.label %></div></div>
+  <div class="kpi tone-green"><div class="kpi-label">Pengisian</div><div class="kpi-value"><%= util.rp(masuk) %></div><div class="kpi-sub">dari kas utama</div></div>
+  <div class="kpi tone-red"><div class="kpi-label">Pemakaian</div><div class="kpi-value"><%= util.rp(keluar) %></div><div class="kpi-sub">pengeluaran kas kecil</div></div>
+  <div class="kpi tone-<%= closing >= 0 ? 'green' : 'red' %>"><div class="kpi-label">Saldo Akhir</div><div class="kpi-value"><%= util.rp(closing) %></div><div class="kpi-sub">akhir <%= p.label %></div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Mutasi Petty Cash</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblPettyRep">
+        <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th class="num">Masuk</th><th class="num">Keluar</th><th class="num">Saldo</th></tr></thead>
+        <tbody>
+        <tr><td colspan="6"><b>Saldo awal periode</b></td><td class="num mono" data-num="<%= util.num(opening) %>"><b><%= util.rp(opening) %></b></td></tr>
+        <% if (!rows.length) { %><tr><td colspan="7"><div class="empty">Tidak ada mutasi pada periode ini.</div></td></tr><% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><%= r.type %></td>
+            <td><%= r.category || '-' %></td>
+            <td><%= r.description || '-' %></td>
+            <td class="num mono" data-num="<%= r.type === 'Masuk' ? util.num(r.amount) : 0 %>"><%= r.type === 'Masuk' ? util.rp(r.amount) : '-' %></td>
+            <td class="num mono" data-num="<%= r.type === 'Keluar' ? util.num(r.amount) : 0 %>"><%= r.type === 'Keluar' ? util.rp(r.amount) : '-' %></td>
+            <td class="num mono" data-num="<%= util.num(r.saldo) %>"><%= util.rp(r.saldo) %></td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">TOTAL</td>
+            <td class="num mono" data-num="<%= util.num(masuk) %>"><%= util.rp(masuk) %></td>
+            <td class="num mono" data-num="<%= util.num(keluar) %>"><%= util.rp(keluar) %></td>
+            <td class="num mono" data-num="<%= util.num(closing) %>"><%= util.rp(closing) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Pemakaian per Kategori</h3></div>
+  <div class="card-body">
+    <% if (!byCategory.length) { %><p class="subtext">Belum ada data.</p><% } %>
+    <div class="bar-list">
+      <% const maxP = Math.max(1, ...byCategory.map(function(c){ return c.value; })); %>
+      <% byCategory.forEach(function(c){ %>
+        <div class="row"><span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+          <div class="track"><span style="width:<%= Math.round(c.value / maxP * 100) %>%"></span></div></div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

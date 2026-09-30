@@ -1,0 +1,244 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Pengaturan Aplikasi</h1>
+    <div class="sub">Identitas usaha, alarm deadline, saldo petty cash &amp; kategori transaksi</div>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form method="post" action="<%= url('/master/pengaturan/save') %>">
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><h3>🏢 Identitas Usaha</h3></div>
+      <div class="card-body">
+        <div class="form-grid one">
+          <div class="field"><label>Nama Usaha</label><input type="text" name="company_name" value="<%= values.company_name %>"></div>
+          <div class="field"><label>Bidang / Tagline</label><input type="text" name="company_tagline" value="<%= values.company_tagline %>"></div>
+          <div class="field"><label>Alamat</label><input type="text" name="company_address" value="<%= values.company_address %>"></div>
+          <div class="field"><label>Telepon / WhatsApp</label><input type="text" name="company_phone" value="<%= values.company_phone %>"></div>
+          <div class="field"><label>Email</label><input type="text" name="company_email" value="<%= values.company_email %>"></div>
+        </div>
+        <p class="subtext">Nama usaha &amp; alamat ini muncul di header cetakan A4 dan halaman login.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>⏰ Alarm &amp; Kas</h3></div>
+      <div class="card-body">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Peringatan Deadline (H- berapa hari)</label>
+            <input type="number" min="1" max="60" name="deadline_warning_days" value="<%= values.deadline_warning_days %>">
+            <div class="help">Project dengan deadline ≤ angka ini akan diberi tanda merah, muncul di panel mendesak, dan memunculkan popup saat login.</div>
+          </div>
+          <div class="field">
+            <label>Saldo Awal Petty Cash (Rp)</label>
+            <input type="text" class="money" name="petty_opening" value="<%= util.num(values.petty_opening) %>">
+            <div class="help">Saldo kas kecil di awal pemakaian sistem.</div>
+          </div>
+          <div class="field"><label>Prefix No. Pembelian</label><input type="text" name="purchase_prefix" value="<%= values.purchase_prefix %>"></div>
+          <div class="field"><label>Prefix Kode Project</label><input type="text" name="project_prefix" value="<%= values.project_prefix %>"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🏷️ Kategori Transaksi</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Kategori Pemasukan</label>
+          <textarea name="income_categories"><%= values.income_categories %></textarea>
+          <div class="help">Pisahkan dengan koma.</div>
+        </div>
+        <div class="field">
+          <label>Kategori Pengeluaran</label>
+          <textarea name="expense_categories"><%= values.expense_categories %></textarea>
+          <div class="help">Pisahkan dengan koma.</div>
+        </div>
+        <div class="field span-2">
+          <label>Kategori Petty Cash</label>
+          <textarea name="petty_categories"><%= values.petty_categories %></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🧾 Kop &amp; Blanko Invoice</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Judul Dokumen</label>
+          <input type="text" name="invoice_title" value="<%= values.invoice_title %>" placeholder="INVOICE">
+        </div>
+        <div class="field">
+          <label>Prefix No. Invoice</label>
+          <input type="text" name="sale_prefix" value="<%= values.sale_prefix %>" placeholder="BA">
+          <div class="help">No. invoice otomatis: <b><%= values.sale_prefix %>-<%= util.todayISO().slice(0,7).replace('-','') %>-0001</b> — bisa diedit manual di form invoice.</div>
+        </div>
+        <div class="field">
+          <label>Baris Alamat / Admin (satu baris satu keterangan)</label>
+          <textarea name="invoice_order_lines" rows="3"><%= values.invoice_order_lines %></textarea>
+          <div class="help">Tampil di bawah nama usaha pada kop invoice.</div>
+        </div>
+        <div class="field">
+          <label>Rekening Pembayaran / Transfer (satu per baris)</label>
+          <textarea name="invoice_banks" rows="3"><%= values.invoice_banks %></textarea>
+        </div>
+        <div class="field span-2">
+          <label>Catatan Bawah Invoice (satu per baris, otomatis diberi bullet)</label>
+          <textarea name="invoice_footer_note" rows="3"><%= values.invoice_footer_note %></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🖼 Logo Usaha</h3></div>
+    <div class="card-body">
+      <div class="grid grid-2" style="align-items:start">
+        <div>
+          <div class="logo-preview">
+            <img src="<%= logoSrc %>" alt="Logo <%= values.company_name %>">
+          </div>
+          <div class="subtext" style="margin-top:8px">
+            <% if (logoUrl) { %>
+              Logo aktif: <b>hasil unggahan Anda</b>.
+            <% } else { %>
+              Logo aktif: <b>logo bawaan sistem</b> (monogram BA + nama usaha). Unggah berkas logo asli Anda untuk menggantinya agar tampil 100% sama.
+            <% } %>
+          </div>
+          <% if (logoUrl) { %>
+            <div style="margin-top:10px">
+              <button class="btn btn-danger btn-sm" type="button" onclick="hapusLogo()">Hapus Logo Unggahan</button>
+            </div>
+          <% } %>
+        </div>
+        <div>
+          <div class="field">
+            <label>Unggah Logo (PNG / JPG, maks 5 MB)</label>
+            <input type="file" id="logoFile" accept=".png,.jpg,.jpeg,.webp,.svg">
+            <div class="help">Gunakan gambar latar transparan (PNG) agar rapi saat dicetak hitam-putih. Logo muncul di kop invoice, halaman login, dan portal customer.</div>
+          </div>
+          <button class="btn btn-primary" type="button" id="btnUploadLogo" onclick="uploadLogo()">⬆ Unggah Logo</button>
+          <div id="logoStatus" class="subtext" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>⚖️ Konversi Satuan Bahan</h3></div>
+    <div class="card-body">
+      <p class="subtext" style="margin-top:0">
+        Dipakai otomatis saat <b>Pembelian Bahan</b> memakai satuan yang berbeda dari satuan stok bahan.
+        Contoh: stok bahan dicatat per <b>meter</b>, tapi Anda membelinya per <b>kg</b> → isi <b>1 kg = 3 meter</b>.
+        Total nota tetap dihitung dari angka yang Anda ketik (Qty × Harga), kolom ini hanya untuk menghitung berapa yang masuk stok.
+      </p>
+      <div class="form-grid">
+        <div class="field">
+          <label>1 kg = ..... meter</label>
+          <input type="number" step="0.0001" min="0" name="conv_kg_m" value="<%= values.conv_kg_m %>" placeholder="3">
+          <div class="help">Isi 0 atau kosongkan bila tidak ingin dikonversi.</div>
+        </div>
+        <div class="field">
+          <label>1 roll = ..... meter</label>
+          <input type="number" step="0.0001" min="0" name="conv_roll_m" value="<%= values.conv_roll_m %>" placeholder="kosongkan bila tidak dipakai">
+          <div class="help">Berat/panjang 1 roll bisa berbeda-beda; kosongkan bila tiap roll Anda timbang sendiri (pilih satuan kg).</div>
+        </div>
+        <div class="field">
+          <label>1 yard = ..... meter</label>
+          <input type="number" step="0.0001" min="0" name="conv_yard_m" value="<%= values.conv_yard_m %>" placeholder="0,9144">
+        </div>
+        <div class="field">
+          <label>Pilihan Satuan di Pembelian (pisahkan dengan koma)</label>
+          <textarea name="purchase_units" rows="2"><%= values.purchase_units %></textarea>
+          <div class="help">Muncul sebagai pilihan di kolom <b>Satuan</b> saat input pembelian.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🏷️ Pilihan pada Blanko Invoice</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>DIGUNAKAN UNTUK (pisahkan dengan koma)</label>
+          <textarea name="sport_options" rows="2"><%= values.sport_options %></textarea>
+        </div>
+        <div class="field">
+          <label>JENIS BAHAN</label>
+          <textarea name="fabric_options" rows="2"><%= values.fabric_options %></textarea>
+        </div>
+        <div class="field">
+          <label>JENIS SABLON</label>
+          <textarea name="print_options" rows="2"><%= values.print_options %></textarea>
+        </div>
+        <div class="field">
+          <label>POSISI</label>
+          <textarea name="position_options" rows="2"><%= values.position_options %></textarea>
+        </div>
+      </div>
+      <p class="subtext">Pilihan ini muncul sebagai kotak centang di form invoice maupun di blanko yang dicetak. Tambahan harga (XXL, lengan panjang, kerah) diatur di menu <b>Opsi Tambahan Harga</b>.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🔗 Portal Tracking Customer</h3></div>
+    <div class="card-body">
+      <div class="form-grid one">
+        <div class="field">
+          <label>Kalimat Sambutan di Halaman Tracking</label>
+          <textarea name="portal_greeting" rows="2"><%= values.portal_greeting %></textarea>
+          <div class="help">Halaman tracking customer: <b><%= absUrl('/track') %></b>. Link khusus per customer dibuat di menu Data Customer → tombol 🔗 Link Tracking.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="display:flex;gap:10px">
+      <button class="btn btn-primary" type="submit">Simpan Pengaturan</button>
+      <a class="btn btn-outline" href="<%= url('/dashboard') %>">Kembali</a>
+    </div>
+  </div>
+</form>
+
+<script>
+  // Hapus logo tanpa <form> bersarang (form bersarang membuat form pengaturan terputus)
+  function hapusLogo() {
+    if (!confirm('Hapus logo unggahan dan kembali ke logo bawaan?')) return;
+    fetch('<%= url('/master/pengaturan/logo/hapus') %>', { method: 'POST', redirect: 'manual' })
+      .then(function () { location.reload(); })
+      .catch(function (e) { alert('Gagal menghapus logo: ' + e.message); });
+  }
+
+  function uploadLogo() {
+    const inp = document.getElementById('logoFile');
+    const st = document.getElementById('logoStatus');
+    const btn = document.getElementById('btnUploadLogo');
+    if (!inp.files || !inp.files.length) { st.textContent = 'Pilih berkas dulu.'; return; }
+    const f = inp.files[0];
+    if (f.size > 5 * 1024 * 1024) { st.textContent = 'Berkas terlalu besar (maks 5 MB).'; return; }
+    btn.disabled = true;
+    st.textContent = 'Mengunggah ' + f.name + ' ...';
+    fetch('<%= url('/master/pengaturan/logo') %>?filename=' + encodeURIComponent(f.name), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: f
+    })
+      .then(r => r.json().then(j => ({ ok: r.ok, j })))
+      .then(res => {
+        btn.disabled = false;
+        if (!res.ok || !res.j.ok) { st.innerHTML = '<span style="color:#b91c1c">Gagal: ' + ((res.j && res.j.error) || 'tidak diketahui') + '</span>'; return; }
+        st.innerHTML = '<span style="color:#15803d">Logo berhasil diunggah. Memuat ulang…</span>';
+        location.reload();
+      })
+      .catch(e => { btn.disabled = false; st.innerHTML = '<span style="color:#b91c1c">Gagal mengunggah: ' + e.message + '</span>'; });
+  }
+</script>
+<%- include('../partials/foot') %>

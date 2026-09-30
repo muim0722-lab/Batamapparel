@@ -1,0 +1,8 @@
+</main>
+<footer class="portal-foot no-print">
+  <%= company %> · <%= companyAddress %><% if (companyPhone) { %> · WA <%= companyPhone %><% } %>
+</footer>
+<script>window.__XLSX_URL = '<%= url('/vendor/xlsx.full.min.js') %>';</script>
+<script src="<%= url('/js/app.js') %>"></script>
+</body>
+</html>

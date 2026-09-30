@@ -1,0 +1,168 @@
+<%
+  /* Dokumen invoice format toko — dipakai halaman staf maupun portal customer.
+     Desain untuk kertas A5 (136 x 198 mm). */
+  const csv2 = (v) => String(v || '').split(',').map(s => s.trim()).filter(Boolean);
+  const has = (list, opt) => list.map(s => s.toUpperCase()).includes(String(opt).trim().toUpperCase());
+  /* Pisahkan daftar rekening menjadi item: baris "a/n NAMA" menjadi pemilik rekening di atasnya */
+  const parseBanks = (lines) => {
+    const out = [];
+    lines.forEach((line) => {
+      const t = String(line || '').trim();
+      if (!t) return;
+      if (/^a\/?n\b/i.test(t) || /^atas\s+nama\b/i.test(t)) {
+        const holder = t.replace(/^a\/?n\s*/i, '').replace(/^atas\s+nama\s*/i, '').trim();
+        if (out.length) out[out.length - 1].holder = holder;
+        else out.push({ text: '', holder });
+        return;
+      }
+      out.push({ text: t, holder: '' });
+    });
+    return out.filter(b => b.text);
+  };
+  const sports = csv2(row.sport), fabrics = csv2(row.fabrics), prints = csv2(row.prints), positions = csv2(row.positions);
+  const banks = parseBanks(settingLines('invoice_banks'));
+  const bankHolder = banks.length && banks.every(b => b.holder && b.holder === banks[0].holder) ? banks[0].holder : '';
+  const orderLines = settingLines('invoice_order_lines');
+  const footerNotes = settingLines('invoice_footer_note');
+  const invTitle = setting('invoice_title', 'INVOICE');
+  const sub = util.num(row.subtotal);
+  const discNom = util.num(row.discount);
+  const tot = util.num(row.total);
+  const dp = util.num(row.paid);
+  const sisa = tot - dp;
+  const padCount = Math.max(0, 8 - (row.items ? row.items.length : 0));
+%>
+<div class="inv" id="invDoc">
+  <div class="inv-head">
+    <div class="inv-brand">
+      <img class="inv-logo" src="<%= typeof logoSrc !== 'undefined' ? logoSrc : logoUrl %>" alt="Logo <%= company %>">
+      <div class="inv-brandtext">
+        <div class="inv-name"><%= company %></div>
+        <div class="inv-tag"><%= tagline %></div>
+        <% orderLines.forEach(function(l){ %><div class="inv-line-txt"><%= l %></div><% }); %>
+      </div>
+    </div>
+    <div class="inv-doc">
+      <div class="inv-title"><%= invTitle %></div>
+      <div class="inv-no">INVOICE NO : <span class="inv-num"><%= row.number %></span></div>
+    </div>
+  </div>
+
+  <div class="inv-meta">
+    <div class="inv-meta-col">
+      <div class="inv-row"><span class="inv-lbl">TANGGAL</span><span class="inv-dots">:</span><span class="inv-val"><%= util.dmy(row.date) %></span></div>
+      <div class="inv-row"><span class="inv-lbl">NO TELP</span><span class="inv-dots">:</span><span class="inv-val"><%= row.phone || row.customer_phone || '' %></span></div>
+      <div class="inv-row"><span class="inv-lbl">DEADLINE</span><span class="inv-dots">:</span><span class="inv-val"><%= row.deadline ? util.dmy(row.deadline) : '' %></span></div>
+    </div>
+    <div class="inv-meta-col">
+      <div class="inv-row"><span class="inv-lbl">MARKETER</span><span class="inv-dots">:</span><span class="inv-val"><%= row.market || row.oleh || '' %></span></div>
+      <div class="inv-row"><span class="inv-lbl">KEPADA</span><span class="inv-dots">:</span><span class="inv-val"><%= row.to_name || row.customer_name || '' %></span></div>
+      <div class="inv-row"><span class="inv-lbl">PROJECT</span><span class="inv-dots">:</span><span class="inv-val"><%= row.project_code || '' %></span></div>
+    </div>
+  </div>
+
+  <div class="inv-sec">
+    <div class="inv-lbl2">DIGUNAKAN UNTUK :</div>
+    <div class="inv-checks">
+      <% settingList('sport_options').forEach(function(o){ %>
+        <span class="inv-chk"><span class="cbx <%= has(sports, o) ? 'on' : '' %>"><%= has(sports, o) ? '✓' : '' %></span><%= o %></span>
+      <% }); %>
+    </div>
+  </div>
+
+  <div class="inv-3col">
+    <div class="inv-sec">
+      <div class="inv-lbl2">JENIS BAHAN :</div>
+      <div class="inv-checks col">
+        <% settingList('fabric_options').forEach(function(o){ %>
+          <span class="inv-chk"><span class="cbx <%= has(fabrics, o) ? 'on' : '' %>"><%= has(fabrics, o) ? '✓' : '' %></span><%= o %></span>
+        <% }); %>
+      </div>
+    </div>
+    <div class="inv-sec">
+      <div class="inv-lbl2">JENIS SABLON :</div>
+      <div class="inv-checks col">
+        <% settingList('print_options').forEach(function(o){ %>
+          <span class="inv-chk"><span class="cbx <%= has(prints, o) ? 'on' : '' %>"><%= has(prints, o) ? '✓' : '' %></span><%= o %></span>
+        <% }); %>
+      </div>
+    </div>
+    <div class="inv-sec">
+      <div class="inv-lbl2">POSISI :</div>
+      <div class="inv-checks col">
+        <% settingList('position_options').forEach(function(o){ %>
+          <span class="inv-chk"><span class="cbx <%= has(positions, o) ? 'on' : '' %>"><%= has(positions, o) ? '✓' : '' %></span><%= o %></span>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <div class="inv-note">
+    <span class="inv-lbl2">NOTE :</span>
+    <div class="inv-notebox"><%= row.invoice_note || row.note || '' %></div>
+  </div>
+
+  <div class="inv-tblwrap">
+    <table class="inv-tbl">
+      <thead>
+        <tr><th style="width:8%">NO</th><th style="width:11%">QTY</th><th style="width:20%">HARGA</th><th>ITEM</th><th style="width:20%">TOTAL</th></tr>
+      </thead>
+      <tbody>
+        <% row.items.forEach(function(it, i){ %>
+          <tr>
+            <td class="c"><%= i + 1 %></td>
+            <td class="c"><%= util.angka(it.qty) %></td>
+            <td class="r"><%= util.angka(it.unit_price) %></td>
+            <td class="it">
+              <%= it.description %>
+              <% if (it.addons) { %><div class="inv-addon">+ <%= it.addons %></div><% } %>
+            </td>
+            <td class="r"><%= util.angka(it.subtotal) %></td>
+          </tr>
+        <% }); %>
+        <% for (let i = 0; i < padCount; i++) { %>
+          <tr class="blank"><td class="c">&nbsp;</td><td></td><td></td><td></td><td></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inv-foot">
+    <div class="inv-totals">
+      <div class="inv-trow"><span class="inv-lbl2">TOTAL</span><span class="inv-dots">:</span><span class="inv-amt"><%= util.angka(sub) %></span></div>
+      <div class="inv-trow"><span class="inv-lbl2">DISC <%= util.num(row.disc_pct) > 0 ? util.angka(row.disc_pct) + '%' : '' %></span><span class="inv-dots">:</span><span class="inv-amt"><%= util.angka(discNom) %></span></div>
+      <div class="inv-trow"><span class="inv-lbl2">TOTAL</span><span class="inv-dots">:</span><span class="inv-amt strong"><%= util.angka(tot) %></span></div>
+      <div class="inv-trow"><span class="inv-lbl2">DP</span><span class="inv-dots">:</span><span class="inv-amt"><%= util.angka(dp) %></span></div>
+      <div class="inv-trow"><span class="inv-lbl2">SISA</span><span class="inv-dots">:</span><span class="inv-amt strong"><%= util.angka(sisa) %></span></div>
+    </div>
+
+    <% if (banks.length) { %>
+      <div class="inv-bank">
+        <div class="inv-bank-head">PEMBAYARAN VIA TRANSFER<% if (bankHolder) { %> <span class="inv-an">( a/n <%= bankHolder %> )</span><% } %></div>
+        <div class="inv-bank-list">
+          <% banks.forEach(function(b){ %>
+            <div class="inv-bank-item"><%= b.text %><% if (b.holder && !bankHolder) { %> <span class="inv-an">(a/n <%= b.holder %>)</span><% } %></div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="inv-sign">
+    <div class="inv-sign-box">
+      <div class="inv-sign-space"></div>
+      <div class="inv-sign-line">( <b>CASHIER SIGNATURE</b> )</div>
+    </div>
+    <div class="inv-sign-box">
+      <div class="inv-sign-space"></div>
+      <div class="inv-sign-line">( <b>CUSTOMER SIGNATURE</b> )</div>
+    </div>
+  </div>
+
+  <% if (footerNotes.length) { %>
+    <div class="inv-footnote">
+      <div class="inv-lbl2">Note:</div>
+      <ul><% footerNotes.forEach(function(n){ %><li><%= n %></li><% }); %></ul>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,182 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= row ? 'Edit Pembelian ' + row.number : 'Pembelian Bahan Baru' %></h1>
+    <div class="sub">Isi persis seperti nota toko — total dihitung otomatis dari <b>Qty × Harga Satuan</b></div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-outline btn-sm" href="<%= url('/transaksi/pembelian') %>">← Daftar Pembelian</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="alert alert-info no-print">
+  <span>🧮</span>
+  <div>
+    <b>Qty dan Harga Satuan boleh pakai koma.</b> Contoh nota: 1 roll dryfit brazil = <b>25,56 kg</b>, harga <b>56.000/kg</b> →
+    pilih bahan, satuan <b>kg</b>, Qty <b>25,56</b>, Harga <b>56.000</b> → total otomatis <b>Rp 1.431.360</b> (sama dengan nota).
+    <% if (conv.kg > 0) { %>
+      Stok bahan dihitung per <b>meter</b>, jadi hasilnya langsung ditampilkan di kolom <b>Masuk Stok</b>
+      (1 kg = <%= util.angka(conv.kg) %> meter).
+    <% } %>
+  </div>
+</div>
+
+<form method="post" action="<%= url('/transaksi/pembelian/save') %>">
+  <input type="hidden" name="id" value="<%= row ? row.id : 0 %>">
+
+  <div class="card">
+    <div class="card-head"><h3>Informasi Pembelian</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>No. Pembelian</label>
+          <input type="text" name="number" value="<%= row ? row.number : nextNumber %>" required>
+        </div>
+        <div class="field">
+          <label>Tanggal <span class="req">*</span></label>
+          <input type="date" name="date" value="<%= row ? row.date : util.todayISO() %>" required>
+        </div>
+        <div class="field">
+          <label>Supplier</label>
+          <select name="supplier_id">
+            <option value="">— pilih supplier —</option>
+            <% suppliers.forEach(function(s){ %>
+              <option value="<%= s.id %>" <%= row && String(row.supplier_id) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+            <% }); %>
+          </select>
+          <div class="help">Belum ada? Tambahkan di Data Master → Supplier.</div>
+        </div>
+        <div class="field">
+          <label>Catatan</label>
+          <input type="text" name="note" value="<%= row ? row.note || '' : '' %>" placeholder="cth: beli dryfit brazil 2 roll">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Item Bahan Dibeli</h3>
+      <div class="spacer"></div>
+      <a class="btn btn-outline btn-sm no-print" href="<%= url('/master/bahan/baru') %>">＋ Bahan Baru</a>
+      <button class="btn btn-light btn-sm no-print" type="button" onclick="addItemRow('itemsBody','tplItem','cost')">+ Tambah Baris</button>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="min-width:220px">Bahan</th>
+              <th style="width:110px">Satuan</th>
+              <th style="width:110px">Qty</th>
+              <th style="width:150px">Harga Satuan</th>
+              <th style="width:140px" class="num">Subtotal</th>
+              <th style="min-width:170px">Masuk Stok</th>
+              <th class="no-export no-print" style="width:50px"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <% const rowsItems = (items && items.length) ? items : [{ material_id: '', description: '', qty: '', unit_cost: '', input_unit: '' }]; %>
+            <% rowsItems.forEach(function(it){ %>
+              <% const m = materials.filter(function(x){ return String(x.id) === String(it.material_id); })[0]; %>
+              <% const curUnit = it.input_unit || (m ? m.unit : ''); %>
+              <% const list = m ? purchaseUnitsFor(m.unit, units) : units; %>
+              <tr data-unit-row>
+                <td>
+                  <select name="item_material">
+                    <option value="">— pilih bahan —</option>
+                    <% materials.forEach(function(mm){ %>
+                      <option value="<%= mm.id %>" data-unit="<%= mm.unit %>" data-stock="<%= util.num(mm.stock) %>"
+                        <%= String(it.material_id) === String(mm.id) ? 'selected' : '' %>><%= mm.name %> (stok <%= util.angka(mm.stock) %> <%= mm.unit %>)</option>
+                    <% }); %>
+                  </select>
+                </td>
+                <td>
+                  <select name="item_unit" class="it-unit">
+                    <% list.forEach(function(u){ %>
+                      <option value="<%= u %>" <%= String(curUnit).toLowerCase() === u.toLowerCase() ? 'selected' : '' %>><%= u %></option>
+                    <% }); %>
+                  </select>
+                </td>
+                <td><input type="text" class="qty it-qty" name="item_qty" value="<%= (it.qty === '' || it.qty === undefined) ? '' : util.angka(it.input_qty || it.qty) %>" placeholder="0"></td>
+                <td><input type="text" class="money it-cost" name="item_cost" value="<%= util.num(it.input_price) > 0 ? util.num(it.input_price) : ((it.unit_cost === '' || it.unit_cost === undefined) ? '' : util.num(it.unit_cost)) %>" placeholder="0"></td>
+                <td class="num mono it-sub">Rp 0</td>
+                <td class="it-conv subtext"></td>
+                <td class="no-export no-print"><button class="btn btn-danger btn-icon" type="button" onclick="removeItemRow(this,'itemsBody','cost')">✕</button></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <template id="tplItem">
+        <td>
+          <select name="item_material">
+            <option value="">— pilih bahan —</option>
+            <% materials.forEach(function(mm){ %>
+              <option value="<%= mm.id %>" data-unit="<%= mm.unit %>" data-stock="<%= util.num(mm.stock) %>"><%= mm.name %> (stok <%= util.angka(mm.stock) %> <%= mm.unit %>)</option>
+            <% }); %>
+          </select>
+        </td>
+        <td>
+          <select name="item_unit" class="it-unit">
+            <% units.forEach(function(u){ %><option value="<%= u %>"><%= u %></option><% }); %>
+          </select>
+        </td>
+        <td><input type="text" class="qty it-qty" name="item_qty" value="" placeholder="0"></td>
+        <td><input type="text" class="money it-cost" name="item_cost" value="" placeholder="0"></td>
+        <td class="num mono it-sub">Rp 0</td>
+        <td class="it-conv subtext"></td>
+        <td class="no-export no-print"><button class="btn btn-danger btn-icon" type="button" onclick="removeItemRow(this,'itemsBody','cost')">✕</button></td>
+      </template>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Pembayaran</h3></div>
+      <div class="card-body">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Diskon (Rp)</label>
+            <input type="text" class="money" id="inp-discount" name="discount" value="<%= row ? util.num(row.discount) : '' %>" placeholder="0">
+          </div>
+          <div class="field">
+            <label>Jumlah Dibayar (Rp)</label>
+            <input type="text" class="money" id="inp-paid" name="paid" value="<%= row ? util.num(row.paid) : '' %>" placeholder="0">
+            <div class="help">Sisa hutang: <b id="txt-sisa">Rp 0</b></div>
+          </div>
+          <div class="field">
+            <label>Status Pembayaran</label>
+            <select name="status" id="inp-status">
+              <% PAY_STATUS.forEach(function(s){ %><option value="<%= s %>" <%= row && row.status === s ? 'selected' : '' %>><%= s %></option><% }); %>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Ringkasan</h3></div>
+      <div class="card-body">
+        <table class="tbl">
+          <tbody>
+            <tr><th>Subtotal</th><td class="num mono" id="txt-subtotal">Rp 0</td></tr>
+            <tr><th>Diskon</th><td class="num mono" id="txt-discount">- Rp 0</td></tr>
+            <tr><th>TOTAL</th><td class="num mono" style="font-size:16px"><b id="txt-total">Rp 0</b></td></tr>
+            <tr><th>Status</th><td class="num"><span class="badge b-blue" id="txt-status">Belum Lunas</span></td></tr>
+          </tbody>
+        </table>
+        <div class="no-print" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit">Simpan Pembelian</button>
+          <a class="btn btn-outline" href="<%= url('/transaksi/pembelian') %>">Batal</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+  window.__CONV = { kg: <%= util.num(conv.kg) %>, roll: <%= util.num(conv.roll) %>, yard: <%= util.num(conv.yard) %> };
+  window.__PURCHASE_UNITS = <%- JSON.stringify(units) %>;
+  window.addEventListener('load', function () { recalcItems('itemsBody', 'cost'); });
+</script>
+<%- include('../partials/foot') %>

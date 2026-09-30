@@ -1,0 +1,85 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Ringkasan Laporan Keuangan</h1>
+    <div class="sub">Halaman khusus Leader &amp; Owner · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <a class="btn btn-primary btn-sm" href="<%= url('/laporan/laba-rugi' + qs({})) %>">Buka Laba Rugi</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form class="filters no-print" method="get" action="<%= url('/laporan') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="grid-kpi">
+  <div class="kpi tone-green"><div class="kpi-label">Total Pemasukan</div><div class="kpi-value"><%= util.rp(kpi.income) %></div><div class="kpi-sub"><%= p.label %></div></div>
+  <div class="kpi tone-red"><div class="kpi-label">Total Pengeluaran</div><div class="kpi-value"><%= util.rp(kpi.expense) %></div><div class="kpi-sub">biaya operasional</div></div>
+  <div class="kpi tone-amber"><div class="kpi-label">Pembelian Bahan</div><div class="kpi-value"><%= util.rp(kpi.purchase) %></div><div class="kpi-sub">harga pokok produksi</div></div>
+  <div class="kpi tone-<%= kpi.laba >= 0 ? 'green' : 'red' %>"><div class="kpi-label">Laba / Rugi</div><div class="kpi-value"><%= util.rp(kpi.laba) %></div><div class="kpi-sub">pemasukan − pengeluaran − pembelian</div></div>
+</div>
+
+<div class="grid grid-3">
+  <a class="card" href="<%= url('/laporan/laba-rugi') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>📈 Laporan Laba Rugi</h3>
+      <p class="subtext">Pendapatan per kategori, HPP bahan, biaya operasional, laba kotor &amp; bersih, margin.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/arus-kas') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>🏦 Laporan Arus Kas</h3>
+      <p class="subtext">Saldo awal &amp; akhir kas utama dan petty cash, pengisian dan pemakaian petty cash.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/penjualan') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>🧾 Laporan Penjualan</h3>
+      <p class="subtext">Rekap nota, piutang, penjualan per customer, item terlaris.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/pembelian') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>📦 Laporan Pembelian</h3>
+      <p class="subtext">Belanja bahan per supplier dan per bahan, hutang supplier.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/bahan') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>🏷️ Stok &amp; Pemakaian Bahan</h3>
+      <p class="subtext">Nilai persediaan, bahan masuk/keluar, daftar bahan menipis.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/petty-cash') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>👛 Buku Petty Cash</h3>
+      <p class="subtext">Mutasi kas kecil lengkap dengan saldo berjalan berjalan.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/rijek') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>♻️ Laporan Barang Rijek</h3>
+      <p class="subtext">Kerugian akibat produk cacat, alasan &amp; tindakan perbaikan.</p>
+    </div>
+  </a>
+  <a class="card" href="<%= url('/laporan/project') + qs({}) %>" style="text-decoration:none">
+    <div class="card-body">
+      <h3>🧵 Laporan Project &amp; Margin</h3>
+      <p class="subtext">Nilai project, biaya, margin, progres, dan status deadline.</p>
+    </div>
+  </a>
+  <div class="card">
+    <div class="card-body">
+      <h3>💡 Kerugian Rijek Periode Ini</h3>
+      <p class="kpi-value" style="color:var(--red)"><%= util.rp(kpi.reject) %></p>
+      <p class="subtext">Tercatat dari laporan barang rijek.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtext">Catatan: laporan keuangan hanya bisa dibuka oleh role <b>Leader</b> dan <b>Owner</b>. Admin &amp; Staff hanya dapat melakukan penginputan/editing data.</p>
+<%- include('../partials/foot') %>

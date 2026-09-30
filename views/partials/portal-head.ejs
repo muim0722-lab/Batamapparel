@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · <%= company %></title>
+<link rel="stylesheet" href="<%= url('/css/app.css') %>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23020a14'/><text y='70' x='50' text-anchor='middle' font-size='58' fill='white' font-family='Arial' font-weight='bold'>B</text></svg>">
+</head>
+<body class="portal-body">
+<header class="portal-top no-print">
+  <div class="portal-brand">
+    <img src="<%= logoSrc %>" alt="Logo <%= company %>" class="portal-logo">
+    <div>
+      <div class="portal-co"><%= company %></div>
+      <div class="portal-sub"><%= tagline %></div>
+    </div>
+  </div>
+  <nav class="portal-nav">
+    <a href="<%= purl('/beranda') %>">Pesanan Saya</a>
+    <a href="<%= purl('/keluar') %>">Keluar</a>
+  </nav>
+</header>
+<main class="portal-main">

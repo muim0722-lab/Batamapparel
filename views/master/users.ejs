@@ -1,0 +1,130 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>User &amp; Hak Akses</h1>
+    <div class="sub">Hanya orang yang punya akun di bawah ini yang bisa masuk ke aplikasi</div>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>➕ Tambah / Edit User</h3></div>
+    <div class="card-body">
+      <form method="post" action="<%= url('/master/user/save') %>" id="userForm">
+        <input type="hidden" name="id" id="u_id" value="0">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Nama Lengkap <span class="req">*</span></label>
+            <input type="text" name="name" id="u_name" required>
+          </div>
+          <div class="field">
+            <label>Username <span class="req">*</span></label>
+            <input type="text" name="username" id="u_username" required placeholder="huruf kecil tanpa spasi">
+          </div>
+          <div class="field">
+            <label>No. HP / WA</label>
+            <input type="text" name="phone" id="u_phone" placeholder="08xx">
+          </div>
+          <div class="field">
+            <label>Role / Hak Akses <span class="req">*</span></label>
+            <select name="role" id="u_role">
+              <% ['owner','leader','admin','staff'].forEach(function(r){ %>
+                <option value="<%= r %>"><%= roles[r].label %> — <%= roles[r].desc %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <label>Password <span id="pwHint">(wajib untuk user baru)</span></label>
+            <input type="password" name="password" id="u_password" minlength="6" placeholder="minimal 6 karakter">
+            <div class="help">Saat mengedit user, isi password hanya kalau ingin mereset passwordnya.</div>
+          </div>
+          <div class="field">
+            <label class="check"><input type="checkbox" name="active" id="u_active" value="1" checked> <span>Akun aktif (bisa login)</span></label>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-primary" type="submit">Simpan User</button>
+          <button class="btn btn-outline" type="button" onclick="resetUserForm()">Form Baru</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>📋 Daftar User</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Nama</th><th>Username</th><th>Role</th><th>Kontak</th><th>Status</th><th class="no-print">Aksi</th></tr></thead>
+          <tbody>
+          <% rows.forEach(function(r){ %>
+            <tr data-row='<%= JSON.stringify({ id: r.id, name: r.name, username: r.username, phone: r.phone || "", role: r.role, active: r.active }).replace(/'/g, "&#39;") %>'>
+              <td><b><%= r.name %></b><% if (r.id === user.id) { %> <span class="badge b-blue">Anda</span><% } %></td>
+              <td class="mono"><%= r.username %></td>
+              <td><span class="role-badge role-<%= r.role %>"><%= roleLabel(r.role) %></span></td>
+              <td><%= r.phone || '-' %></td>
+              <td><% if (r.active) { %><span class="badge b-green">Aktif</span><% } else { %><span class="badge b-grey">Nonaktif</span><% } %></td>
+              <td class="no-print nowrap">
+                <button class="btn btn-outline btn-sm" type="button" onclick="editUser(this)">Edit</button>
+                <% if (r.id !== user.id) { %>
+                  <form method="post" action="<%= url('/master/user/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus user <%= r.name %>?">
+                    <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🔐 Matriks Hak Akses</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Role</th><th>Keterangan</th><th>Input transaksi</th><th>Edit data</th><th>Hapus data</th><th>Laporan operasional</th><th>Laba Rugi / Arus Kas / Ringkasan</th><th>Master &amp; Pengaturan</th><th>Kelola user</th></tr></thead>
+        <tbody>
+          <% ['owner','leader','admin','staff'].forEach(function(r){ %>
+            <tr>
+              <td><span class="role-badge role-<%= r %>"><%= roles[r].label %></span></td>
+              <td><%= roles[r].desc %></td>
+              <td><%= permsAll[r].input ? '✅' : '—' %></td>
+              <td><%= permsAll[r].edit ? '✅' : '—' %></td>
+              <td><%= permsAll[r].del ? '✅' : '—' %></td>
+              <td><%= permsAll[r].report ? '✅' : '—' %></td>
+              <td><%= permsAll[r].reportFin ? '✅' : '—' %></td>
+              <td><%= permsAll[r].settings ? '✅' : '—' %></td>
+              <td><%= permsAll[r].users ? '✅' : '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function editUser(btn) {
+    const data = JSON.parse(btn.closest('tr').getAttribute('data-row'));
+    document.getElementById('u_id').value = data.id;
+    document.getElementById('u_name').value = data.name;
+    document.getElementById('u_username').value = data.username;
+    document.getElementById('u_phone').value = data.phone;
+    document.getElementById('u_role').value = data.role;
+    document.getElementById('u_active').checked = !!data.active;
+    document.getElementById('u_password').value = '';
+    document.getElementById('pwHint').textContent = '(kosongkan bila tidak diubah)';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function resetUserForm() {
+    document.getElementById('userForm').reset();
+    document.getElementById('u_id').value = 0;
+    document.getElementById('pwHint').textContent = '(wajib untuk user baru)';
+  }
+</script>
+<%- include('../partials/foot') %>

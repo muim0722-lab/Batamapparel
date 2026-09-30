@@ -1,0 +1,102 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Laporan Barang Rijek</h1>
+    <div class="sub"><%= m.company %> · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4 Portrait</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ Cetak A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblRijekRep','laporan-rijek-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Barang Rijek',period:'<%= p.label %>',sheet:'Barang Rijek',by:'<%= user.name %>'})">⬇ Excel</button>
+    <% if (canReportFin) { %><a class="btn btn-light btn-sm" href="<%= url('/laporan') + qs({}) %>">Semua Laporan</a><% } %>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form class="filters no-print" method="get" action="<%= url('/laporan/rijek') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="grid-kpi">
+  <div class="kpi tone-red"><div class="kpi-label">Total Nilai Kerugian</div><div class="kpi-value"><%= util.rp(total) %></div><div class="kpi-sub"><%= rows.length %> kejadian</div></div>
+  <div class="kpi tone-amber"><div class="kpi-label">Total Qty Rijek</div><div class="kpi-value"><%= util.angka(totalQty) %></div><div class="kpi-sub">unit cacat</div></div>
+  <div class="kpi tone-navy"><div class="kpi-label">Rata-rata Kerugian</div><div class="kpi-value"><%= rows.length ? util.rp(total / rows.length) : util.rp(0) %></div><div class="kpi-sub">per kejadian</div></div>
+  <div class="kpi tone-purple"><div class="kpi-label">Alasan Terbanyak</div><div class="kpi-value" style="font-size:16px"><%= byReason.length ? util.truncated(byReason[0].label, 24) : '-' %></div><div class="kpi-sub"><%= byReason.length ? util.rp(byReason[0].value) : util.rp(0) %></div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Rincian Barang Rijek</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblRijekRep">
+        <thead><tr><th>Tanggal</th><th>Item</th><th>Project</th><th>Bahan</th><th class="num">Qty</th><th>Alasan</th><th>Tindakan</th><th class="num">Kerugian</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="8"><div class="empty">Tidak ada barang rijek pada periode ini.</div></td></tr><% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><%= r.item_name %></td>
+            <td><%= r.project_code || '-' %></td>
+            <td><%= r.material_name || '-' %></td>
+            <td class="num mono" data-num="<%= util.num(r.qty) %>"><%= util.angka(r.qty) %></td>
+            <td><%= r.reason || '-' %></td>
+            <td><%= r.action %></td>
+            <td class="num mono" data-num="<%= util.num(r.loss_cost) %>"><%= util.rp(r.loss_cost) %></td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4">TOTAL</td><td class="num mono" data-num="<%= util.num(totalQty) %>"><%= util.angka(totalQty) %></td><td colspan="2"></td>
+            <td class="num mono" data-num="<%= util.num(total) %>"><%= util.rp(total) %></td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-3">
+  <div class="card">
+    <div class="card-head"><h3>Kerugian per Alasan</h3></div>
+    <div class="card-body">
+      <% if (!byReason.length) { %><p class="subtext">Belum ada data.</p><% } %>
+      <div class="bar-list">
+        <% const maxR = Math.max(1, ...byReason.map(function(c){ return c.value; })); %>
+        <% byReason.forEach(function(c){ %>
+          <div class="row"><span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+            <div class="track"><span style="width:<%= Math.round(c.value / maxR * 100) %>%"></span></div></div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Kerugian per Tindakan</h3></div>
+    <div class="card-body">
+      <% if (!byAction.length) { %><p class="subtext">Belum ada data.</p><% } %>
+      <div class="bar-list">
+        <% const maxA = Math.max(1, ...byAction.map(function(c){ return c.value; })); %>
+        <% byAction.forEach(function(c){ %>
+          <div class="row"><span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+            <div class="track"><span style="width:<%= Math.round(c.value / maxA * 100) %>%"></span></div></div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Kerugian per Project</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Project</th><th class="num">Kerugian</th></tr></thead>
+          <tbody>
+          <% if (!byProject.length) { %><tr><td colspan="2"><div class="empty">Belum ada data.</div></td></tr><% } %>
+          <% byProject.forEach(function(x){ %>
+            <tr><td><%= x.label %></td><td class="num mono"><%= util.rp(x.value) %></td></tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,33 @@
+<%- include('../partials/portal-head') %>
+<div class="portal-card">
+  <h1 style="font-size:20px;margin-bottom:4px">Lacak Pesanan Anda</h1>
+  <p style="color:#5b6b82;font-size:13px;margin-top:0">
+    <%= portalGreeting || 'Masukkan nomor HP dan nomor invoice / kode project Anda untuk melihat proses produksi.' %>
+  </p>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><span>⚠️</span><div>Data tidak cocok. Periksa kembali <b>No. HP</b> dan <b>No. Invoice / Kode Project</b> Anda, atau hubungi admin kami.</div></div>
+  <% } %>
+  <% if (open) { %>
+    <div class="alert alert-info"><span>ℹ️</span><div>Terima kasih! Pesanan Anda sudah kami buka. Silakan cek progresnya di halaman ini.</div></div>
+  <% } %>
+
+  <form method="post" action="<%= purl('/') %>">
+    <div class="field" style="margin-bottom:14px">
+      <label>No. HP / WhatsApp</label>
+      <input type="tel" name="phone" required placeholder="08xxxxxxxxxx" autofocus>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>No. Invoice atau Kode Project</label>
+      <input type="text" name="code" required placeholder="cth: BA-202609-0001 atau PRJ-0002">
+      <div class="help">Tertera di invoice / nota yang kami berikan. Kalau lupa, hubungi admin <%= company %>.</div>
+    </div>
+    <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Lihat Progres Pesanan</button>
+  </form>
+
+  <div class="portal-help">
+    <b>Butuh bantuan?</b>
+    <% if (companyPhone) { %>WhatsApp admin: <a href="https://wa.me/<%= waNumber(companyPhone) %>" target="_blank" rel="noopener"><%= companyPhone %></a><% } else { %>Hubungi admin <%= company %>.<% } %>
+  </div>
+</div>
+<%- include('../partials/portal-foot') %>

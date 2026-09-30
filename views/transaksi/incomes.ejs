@@ -1,0 +1,127 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Pemasukan</h1>
+    <div class="sub">Semua uang masuk: DP, pelunasan, jasa desain, dll · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblIncomes','pemasukan-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Pemasukan',period:'<%= p.label %>',sheet:'Pemasukan',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-primary btn-sm" href="<%= url('/transaksi/pemasukan/baru') %>">+ Pemasukan</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="alert alert-info no-print">
+  <span>ℹ️</span>
+  <div>
+    <b>Pemasukan = uang yang benar-benar masuk kas/rekening</b> (DP, pelunasan, jasa desain lepas, dll).
+    Menu ini untuk pemasukan yang <b>tidak berasal dari invoice</b> — kalau uangnya dari DP/pelunasan invoice, cukup dicatat di
+    <a href="<%= url('/transaksi/penjualan') %>">Invoice / Penjualan</a> dan otomatis muncul di sini.
+    <a href="<%= url('/panduan') %>">Baca panduan lengkap →</a>
+  </div>
+</div>
+
+<div class="grid-kpi">
+  <div class="kpi tone-green">
+    <div class="kpi-label">Total Pemasukan</div>
+    <div class="kpi-value"><%= util.rp(total) %></div>
+    <div class="kpi-sub"><%= rows.length %> transaksi · <%= p.label %></div>
+  </div>
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Rata-rata / Transaksi</div>
+    <div class="kpi-value"><%= rows.length ? util.rp(total / rows.length) : util.rp(0) %></div>
+    <div class="kpi-sub">dari transaksi yang tampil</div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Kategori Terbesar</div>
+    <div class="kpi-value" style="font-size:17px"><%= byCategory.length ? byCategory[0].label : '-' %></div>
+    <div class="kpi-sub"><%= byCategory.length ? util.rp(byCategory[0].value) : util.rp(0) %></div>
+  </div>
+  <div class="kpi tone-blue">
+    <div class="kpi-label">Jumlah Kategori</div>
+    <div class="kpi-value"><%= byCategory.length %></div>
+    <div class="kpi-sub">sumber pemasukan berbeda</div>
+  </div>
+</div>
+
+<form class="filters no-print" method="get" action="<%= url('/transaksi/pemasukan') %>">
+  <%- include('../partials/period') %>
+  <div class="field">
+    <label>Kategori</label>
+    <select name="kategori">
+      <option value="">Semua kategori</option>
+      <% categories.forEach(function(c){ %><option value="<%= c %>" <%= filters.kategori === c ? 'selected' : '' %>><%= c %></option><% }); %>
+    </select>
+  </div>
+  <div class="field" style="min-width:200px">
+    <label>Cari keterangan</label>
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="keterangan / metode / catatan">
+  </div>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Filter</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblIncomes">
+        <thead>
+          <tr>
+            <th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Metode</th><th>Project</th>
+            <th class="num">Nominal</th><th>Dicatat oleh</th><th class="no-export no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="8"><div class="empty"><span class="big">💰</span>Belum ada pemasukan pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><span class="badge b-blue"><%= r.category %></span></td>
+            <td><%= r.description || '-' %><% if (r.note) { %><div class="subtext"><%= r.note %></div><% } %></td>
+            <td><%= r.method %></td>
+            <td><%= r.project_code ? r.project_code + ' — ' + r.project_name : '-' %></td>
+            <td class="num mono" data-num="<%= util.num(r.amount) %>"><%= util.rp(r.amount) %></td>
+            <td><%= r.oleh || '-' %></td>
+            <td class="no-export no-print nowrap">
+              <% if (r.sale_id) { %><a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/' + r.sale_id) %>">Penjualan</a><% } %>
+              <% if (perm.edit) { %><a class="btn btn-outline btn-sm" href="<%= url('/transaksi/pemasukan/' + r.id + '/edit') %>">Edit</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/transaksi/pemasukan/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus pemasukan <%= util.angka(r.amount) %>?">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">TOTAL PEMASUKAN</td>
+            <td class="num mono" data-num="<%= util.num(total) %>"><%= util.rp(total) %></td>
+            <td colspan="2" class="no-export"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Pemasukan per Kategori</h3></div>
+  <div class="card-body">
+    <% if (!byCategory.length) { %><p class="subtext">Belum ada data.</p><% } %>
+    <div class="bar-list">
+      <% const maxCat = Math.max(1, ...byCategory.map(function(c){ return c.value; })); %>
+      <% byCategory.forEach(function(c){ %>
+        <div class="row">
+          <span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+          <div class="track"><span style="width:<%= Math.round(c.value / maxCat * 100) %>%"></span></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

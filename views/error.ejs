@@ -1,0 +1,10 @@
+<%- include('partials/head') %>
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:46px 24px">
+    <div style="font-size:44px;margin-bottom:8px"><%= code === 404 ? '🧭' : (code === 403 ? '🔒' : '⚠️') %></div>
+    <h1 style="font-size:22px"><%= title %></h1>
+    <p style="color:var(--muted);max-width:520px;margin:8px auto 20px"><%= message %></p>
+    <a class="btn btn-primary" href="<%= url('/dashboard') %>">Kembali ke Dashboard</a>
+  </div>
+</div>
+<%- include('partials/foot') %>

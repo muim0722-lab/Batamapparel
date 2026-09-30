@@ -1,0 +1,102 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Laporan Laba Rugi</h1>
+    <div class="sub"><%= m.company %> · Periode <b><%= p.label %></b> (<%= util.dmy(p.from) %> s/d <%= util.dmy(p.to) %>)</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4 Portrait</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ Cetak A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblLabaRugi','laba-rugi-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Laba Rugi',period:'<%= p.label %>',sheet:'Laba Rugi',by:'<%= user.name %>',printedAt:'<%= m.printedAt %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/laporan') + qs({}) %>">Semua Laporan</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form class="filters no-print" method="get" action="<%= url('/laporan/laba-rugi') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="grid-kpi">
+  <div class="kpi tone-green"><div class="kpi-label">Pendapatan</div><div class="kpi-value"><%= util.rp(pendapatan) %></div><div class="kpi-sub"><%= jmlTransaksi %> transaksi pemasukan</div></div>
+  <div class="kpi tone-amber"><div class="kpi-label">HPP / Pembelian Bahan</div><div class="kpi-value"><%= util.rp(hpp) %></div><div class="kpi-sub">biaya bahan baku</div></div>
+  <div class="kpi tone-red"><div class="kpi-label">Biaya Operasional</div><div class="kpi-value"><%= util.rp(biaya) %></div><div class="kpi-sub"><%= jmlBiaya %> transaksi pengeluaran</div></div>
+  <div class="kpi tone-<%= labaBersih >= 0 ? 'green' : 'red' %>"><div class="kpi-label">Laba Bersih</div><div class="kpi-value"><%= util.rp(labaBersih) %></div><div class="kpi-sub">margin <%= util.angka(margin) %>%</div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Laporan Laba Rugi Periode <%= p.label %></h3><div class="spacer"></div><span class="subtext">Semua angka dalam Rupiah</span></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblLabaRugi">
+        <thead>
+          <tr><th style="width:60%">Keterangan</th><th class="num">Jumlah</th><th class="num">Subtotal</th></tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3" style="background:#f7f9fc"><b>A. PENDAPATAN</b></td></tr>
+          <% if (!byIncome.length) { %><tr><td>Belum ada pemasukan</td><td class="num mono" data-num="0">0</td><td class="num mono" data-num="0">0</td></tr><% } %>
+          <% byIncome.forEach(function(r){ %>
+            <tr>
+              <td style="padding-left:26px">Pendapatan — <%= r.label %></td>
+              <td class="num mono" data-num="<%= util.num(r.value) %>"><%= util.rp(r.value) %></td>
+              <td></td>
+            </tr>
+          <% }); %>
+          <tr><td><b>Total Pendapatan (A)</b></td><td></td><td class="num mono" data-num="<%= util.num(pendapatan) %>"><b><%= util.rp(pendapatan) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>B. HARGA POKOK PRODUKSI</b></td></tr>
+          <tr><td style="padding-left:26px">Pembelian bahan baku</td><td class="num mono" data-num="<%= util.num(hpp) %>"><%= util.rp(hpp) %></td><td></td></tr>
+          <tr><td><b>Total HPP (B)</b></td><td></td><td class="num mono" data-num="<%= util.num(hpp) %>"><b><%= util.rp(hpp) %></b></td></tr>
+          <tr><td><b>LABA KOTOR (A − B)</b></td><td></td><td class="num mono" data-num="<%= util.num(labaKotor) %>"><b><%= util.rp(labaKotor) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>C. BIAYA OPERASIONAL</b></td></tr>
+          <% if (!byExpense.length) { %><tr><td>Belum ada pengeluaran</td><td class="num mono" data-num="0">0</td><td class="num mono" data-num="0">0</td></tr><% } %>
+          <% byExpense.forEach(function(r){ %>
+            <tr>
+              <td style="padding-left:26px">Biaya — <%= r.label %></td>
+              <td class="num mono" data-num="<%= util.num(r.value) %>"><%= util.rp(r.value) %></td>
+              <td></td>
+            </tr>
+          <% }); %>
+          <tr><td><b>Total Biaya Operasional (C)</b></td><td></td><td class="num mono" data-num="<%= util.num(biaya) %>"><b><%= util.rp(biaya) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>D. HASIL USAHA</b></td></tr>
+          <tr><td><b>LABA / RUGI BERSIH (A − B − C)</b></td><td></td><td class="num mono" data-num="<%= util.num(labaBersih) %>"><b style="font-size:15px"><%= util.rp(labaBersih) %></b></td></tr>
+          <tr><td>Margin laba bersih</td><td class="num mono" data-num="<%= util.angka(margin) %>"><%= util.angka(margin) %>%</td><td></td></tr>
+          <tr><td>Kerugian barang rijek (info, sudah termasuk biaya)</td><td class="num mono" data-num="<%= util.num(rejects) %>"><%= util.rp(rejects) %></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>Komposisi Pendapatan</h3></div>
+    <div class="card-body">
+      <% if (!byIncome.length) { %><p class="subtext">Belum ada data.</p><% } %>
+      <div class="bar-list">
+        <% const maxI = Math.max(1, ...byIncome.map(function(c){ return c.value; })); %>
+        <% byIncome.forEach(function(c){ %>
+          <div class="row"><span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+            <div class="track"><span style="width:<%= Math.round(c.value / maxI * 100) %>%"></span></div></div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Komposisi Biaya</h3></div>
+    <div class="card-body">
+      <% if (!byExpense.length) { %><p class="subtext">Belum ada data.</p><% } %>
+      <div class="bar-list">
+        <% const maxE = Math.max(1, ...byExpense.map(function(c){ return c.value; })); %>
+        <% byExpense.forEach(function(c){ %>
+          <div class="row"><span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+            <div class="track"><span style="width:<%= Math.round(c.value / maxE * 100) %>%"></span></div></div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

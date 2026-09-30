@@ -1,0 +1,106 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Tracking Project</h1>
+    <div class="sub">Pantau posisi setiap order jersey seperti tracking pengiriman — lengkap dengan alarm deadline</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblProjects','tracking-project',{title:'Daftar Tracking Project',extra:'Total <%= projects.length %> project',sheet:'Project',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-primary btn-sm" href="<%= url('/projects/baru') %>">+ Project Baru</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy"><div class="kpi-label">Total Project</div><div class="kpi-value"><%= stats.total %></div><div class="kpi-sub">sesuai filter</div></div>
+  <div class="kpi tone-blue"><div class="kpi-label">Sedang Berjalan</div><div class="kpi-value"><%= stats.aktif %></div><div class="kpi-sub">baru / proses / revisi</div></div>
+  <div class="kpi tone-<%= stats.urgent ? 'red' : 'green' %>"><div class="kpi-label">Mendesak / Lewat Deadline</div><div class="kpi-value"><%= stats.urgent %></div><div class="kpi-sub">batas alarm H-<%= wd %></div></div>
+  <div class="kpi tone-green"><div class="kpi-label">Selesai</div><div class="kpi-value"><%= stats.selesai %></div><div class="kpi-sub">project tuntas</div></div>
+</div>
+
+<form class="filters no-print" method="get" action="<%= url('/projects') %>">
+  <div class="field" style="min-width:230px">
+    <label>Cari project / customer / resi</label>
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="kode, nama, customer, no. resi">
+  </div>
+  <div class="field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Semua status</option>
+      <% STATUS.forEach(function(s){ %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }); %>
+    </select>
+  </div>
+  <div class="field">
+    <label>Prioritas</label>
+    <select name="priority">
+      <option value="">Semua prioritas</option>
+      <% PRIORITY.forEach(function(s){ %><option value="<%= s %>" <%= filters.priority === s ? 'selected' : '' %>><%= s %></option><% }); %>
+    </select>
+  </div>
+  <div class="field">
+    <label>Fokus</label>
+    <select name="only">
+      <option value="">Semua project</option>
+      <option value="aktif" <%= filters.only === 'aktif' ? 'selected' : '' %>>Hanya yang berjalan</option>
+      <option value="urgent" <%= filters.only === 'urgent' ? 'selected' : '' %>>Hanya mendesak/terlambat</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>&nbsp;</label>
+    <button class="btn btn-light btn-sm" type="submit">Filter</button>
+  </div>
+  <div class="field"><label>&nbsp;</label><a class="btn btn-outline btn-sm" href="<%= url('/projects') %>">Reset</a></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblProjects">
+        <thead>
+          <tr>
+            <th>Kode</th><th>Project / Customer</th><th>Order</th><th>Deadline</th><th>Alarm</th>
+            <th>Tahap Sekarang</th><th>Progress</th><th>Status</th><th class="no-export no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (!projects.length) { %>
+          <tr class="no-export"><td colspan="9"><div class="empty"><span class="big">🧵</span>Belum ada project. Klik <b>+ Project Baru</b> untuk mulai tracking.</div></td></tr>
+        <% } %>
+        <% projects.forEach(function(r){ %>
+          <tr class="<%= ['overdue','urgent'].indexOf(r.info.level) > -1 ? 'row-urgent' : (r.info.level === 'warning' ? 'row-warn' : (r.status === 'Selesai' ? 'row-done' : '')) %>">
+            <td class="mono nowrap">
+              <a href="<%= url('/projects/' + r.id) %>"><b><%= r.code %></b></a>
+              <% if (r.priority === 'Urgent') { %><div><span class="badge b-purple">🔥 URGENT</span></div><% } %>
+            </td>
+            <td>
+              <%= r.name %>
+              <div class="subtext"><%= r.customer_name || 'tanpa customer' %><% if (r.qty) { %> · <%= util.angka(r.qty) %> pcs<% } %></div>
+            </td>
+            <td class="nowrap" data-export="<%= util.dmy(r.order_date) %>"><%= util.dmy(r.order_date) %></td>
+            <td class="nowrap" data-export="<%= r.deadline ? util.dmy(r.deadline) : '-' %>"><%= r.deadline ? util.dmy(r.deadline) : '-' %></td>
+            <td class="nowrap"><%- include('../partials/deadline', { info: r.info }) %></td>
+            <td><%= r.current_stage || '-' %></td>
+            <td style="min-width:120px">
+              <div class="progress <%= r.info.level === 'overdue' ? 'amber' : (r.progress === 100 ? 'green' : '') %>"><span style="width:<%= r.progress %>%"></span></div>
+              <div class="subtext"><%= r.done_stages %>/<%= r.total_stages %> tahap · <%= r.progress %>%</div>
+            </td>
+            <td><span class="badge <%= r.status === 'Selesai' ? 'b-green' : (r.status === 'Batal' ? 'b-grey' : (r.status === 'Revisi' ? 'b-amber' : 'b-blue')) %>"><%= r.status %></span></td>
+            <td class="no-export no-print nowrap">
+              <a class="btn btn-light btn-sm" href="<%= url('/projects/' + r.id) %>">Detail</a>
+              <% if (perm.edit) { %><a class="btn btn-outline btn-sm" href="<%= url('/projects/' + r.id + '/edit') %>">Edit</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/projects/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus project <%= r.code %>? Riwayat tahapan juga akan hilang.">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

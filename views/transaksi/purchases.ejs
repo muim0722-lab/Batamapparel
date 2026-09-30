@@ -1,0 +1,104 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Pembelian Bahan</h1>
+    <div class="sub">Belanja bahan baku dari supplier · otomatis menambah stok · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblPurchases','pembelian-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Pembelian Bahan',period:'<%= p.label %>',sheet:'Pembelian',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-primary btn-sm" href="<%= url('/transaksi/pembelian/baru') %>">+ Pembelian</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Total Pembelian</div>
+    <div class="kpi-value"><%= util.rp(total) %></div>
+    <div class="kpi-sub"><%= rows.length %> transaksi · <%= p.label %></div>
+  </div>
+  <div class="kpi tone-green">
+    <div class="kpi-label">Sudah Dibayar</div>
+    <div class="kpi-value"><%= util.rp(paid) %></div>
+    <div class="kpi-sub">kas keluar untuk bahan</div>
+  </div>
+  <div class="kpi tone-red">
+    <div class="kpi-label">Hutang Supplier</div>
+    <div class="kpi-value"><%= util.rp(unpaid) %></div>
+    <div class="kpi-sub">belum dibayar</div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Transaksi Lunas</div>
+    <div class="kpi-value"><%= rows.filter(function(r){ return r.status === 'Lunas'; }).length %></div>
+    <div class="kpi-sub">dari <%= rows.length %> transaksi</div>
+  </div>
+</div>
+
+<form class="filters no-print" method="get" action="<%= url('/transaksi/pembelian') %>">
+  <%- include('../partials/period') %>
+  <div class="field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Semua status</option>
+      <% PAY_STATUS.forEach(function(s){ %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }); %>
+    </select>
+  </div>
+  <div class="field" style="min-width:200px">
+    <label>Cari no. / supplier</label>
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="no. pembelian, supplier, catatan">
+  </div>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Filter</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblPurchases">
+        <thead>
+          <tr>
+            <th>No. Pembelian</th><th>Tanggal</th><th>Supplier</th><th class="num">Item</th>
+            <th class="num">Total</th><th class="num">Dibayar</th><th class="num">Sisa</th><th>Status</th><th class="no-export no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="9"><div class="empty"><span class="big">📦</span>Belum ada pembelian pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="mono nowrap"><a href="<%= url('/transaksi/pembelian/' + r.id) %>"><b><%= r.number %></b></a></td>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><%= r.supplier_name || '-' %><div class="subtext"><%= r.note || '' %></div></td>
+            <td class="num mono" data-num="<%= util.num(r.jml_item) %>"><%= r.jml_item %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) %>"><%= util.rp(r.total) %></td>
+            <td class="num mono" data-num="<%= util.num(r.paid) %>"><%= util.rp(r.paid) %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) - util.num(r.paid) %>"><%= util.rp(util.num(r.total) - util.num(r.paid)) %></td>
+            <td><span class="badge <%= r.status === 'Lunas' ? 'b-green' : (r.status === 'Sebagian' ? 'b-amber' : 'b-red') %>"><%= r.status %></span></td>
+            <td class="no-export no-print nowrap">
+              <a class="btn btn-light btn-sm" href="<%= url('/transaksi/pembelian/' + r.id) %>">Detail</a>
+              <% if (perm.edit) { %><a class="btn btn-outline btn-sm" href="<%= url('/transaksi/pembelian/' + r.id + '/edit') %>">Edit</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/transaksi/pembelian/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus pembelian <%= r.number %>? Stok bahan akan dikembalikan.">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">TOTAL</td>
+            <td class="num mono" data-num="<%= util.num(total) %>"><%= util.rp(total) %></td>
+            <td class="num mono" data-num="<%= util.num(paid) %>"><%= util.rp(paid) %></td>
+            <td class="num mono" data-num="<%= util.num(unpaid) %>"><%= util.rp(unpaid) %></td>
+            <td colspan="2" class="no-export"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

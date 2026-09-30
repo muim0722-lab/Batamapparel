@@ -1,0 +1,231 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= project.code %> — <%= project.name %></h1>
+    <div class="sub">
+      <%- include('../partials/deadline', { info: project.info, priority: project.priority }) %>
+      &nbsp;Customer: <b><%= project.customer_name || 'tanpa customer' %></b>
+      <% if (project.customer_phone) { %> · <%= project.customer_phone %><% } %>
+    </div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-primary btn-sm" href="<%= url('/transaksi/penjualan/baru?project_id=' + project.id) %>">+ Invoice Project Ini</a>
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak SPK A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/bahan-terpakai') %>">Bahan Terpakai</a>
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/pengeluaran/baru?project_id=' + project.id) %>">+ Biaya Project</a>
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/pemasukan/baru?project_id=' + project.id) %>">+ Pemasukan Project</a>
+    <% if (perm.edit) { %><a class="btn btn-primary btn-sm" href="<%= url('/projects/' + project.id + '/edit') %>">Edit Project</a><% } %>
+    <% if (perm.del) { %>
+      <form method="post" action="<%= url('/projects/' + project.id + '/delete') %>" style="display:inline" data-confirm="Hapus project <%= project.code %> beserta riwayat tahapannya?">
+        <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+      </form>
+    <% } %>
+    <a class="btn btn-outline btn-sm" href="<%= url('/projects') %>">← Daftar Project</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy"><div class="kpi-label">Status Project</div><div class="kpi-value" style="font-size:18px"><%= project.status %></div><div class="kpi-sub">Prioritas: <%= project.priority %></div></div>
+  <div class="kpi tone-blue"><div class="kpi-label">Deadline</div><div class="kpi-value" style="font-size:18px"><%= project.deadline ? util.dmy(project.deadline) : 'Belum diisi' %></div><div class="kpi-sub"><%= project.info.text %></div></div>
+  <div class="kpi tone-purple"><div class="kpi-label">Jumlah Order</div><div class="kpi-value" style="font-size:18px"><%= util.angka(project.qty) %> pcs</div><div class="kpi-sub">Order <%= util.dmy(project.order_date) %></div></div>
+  <div class="kpi tone-green"><div class="kpi-label">Nilai Project</div><div class="kpi-value" style="font-size:18px"><%= util.rp(project.total_price) %></div><div class="kpi-sub">Masuk: <%= util.rp(project.revenue) %></div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head">
+      <h3>🚚 Tracking Tahapan Produksi</h3>
+      <div class="spacer"></div>
+      <span class="badge b-blue"><%= project.doneStages %>/<%= project.stages.length %> selesai · <%= project.progress %>%</span>
+    </div>
+    <div class="card-body">
+      <div class="progress <%= project.info.level === 'overdue' ? 'amber' : (project.progress === 100 ? 'green' : '') %>" style="height:12px;margin-bottom:14px"><span style="width:<%= project.progress %>%"></span></div>
+
+      <div class="stepper no-print" style="margin-bottom:16px">
+        <% project.stages.forEach(function(s){ %>
+          <span class="s <%= s.status === 'Selesai' ? 'done' : (s.status === 'Proses' ? 'proses' : '') %>"><%= s.stage_name %></span>
+        <% }); %>
+      </div>
+
+      <ul class="timeline">
+        <% project.stages.forEach(function(s, i){ %>
+          <li class="step <%= s.status === 'Selesai' ? 'done' : (s.status === 'Proses' ? 'proses' : '') %>">
+            <span class="dot"><%= s.status === 'Selesai' ? '✓' : (i + 1) %></span>
+            <div class="step-name"><%= s.stage_name %></div>
+            <div class="step-meta">
+              <%= s.status %>
+              <% if (s.updated_at) { %> · update terakhir <%= util.dmy(s.updated_at) %> <%= String(s.updated_at).slice(11, 16) %><% } %>
+              <% if (s.oleh) { %> oleh <%= s.oleh %><% } %>
+            </div>
+            <% if (s.note) { %><div class="step-note"><%= s.note %></div><% } %>
+            <% if (perm.input) { %>
+              <form method="post" action="<%= url('/projects/' + project.id + '/stage/' + s.stage_id) %>" class="no-print" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <select name="status" style="width:auto;padding:4px 8px;font-size:12px">
+                  <% STAGE_STATUS.forEach(function(st){ %><option value="<%= st %>" <%= s.status === st ? 'selected' : '' %>><%= st %></option><% }); %>
+                </select>
+                <input type="text" name="note" placeholder="catatan tahap (opsional)" style="width:auto;flex:1;min-width:150px;padding:4px 8px;font-size:12px" value="">
+                <button class="btn btn-light btn-sm" type="submit">Update</button>
+              </form>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head"><h3>📋 Detail Order</h3></div>
+      <div class="card-body">
+        <table class="tbl">
+          <tbody>
+            <tr><th style="width:42%">Kode Project</th><td class="mono"><%= project.code %></td></tr>
+            <tr><th>Customer</th><td><%= project.customer_name || '-' %></td></tr>
+            <tr><th>Kontak</th><td><%= project.customer_phone || '-' %></td></tr>
+            <tr><th>Alamat</th><td><%= project.customer_address || '-' %></td></tr>
+            <tr><th>Tanggal Order</th><td><%= util.dmy(project.order_date) %></td></tr>
+            <tr><th>Deadline</th><td><%= project.deadline ? util.dmy(project.deadline) : '-' %></td></tr>
+            <tr><th>Jenis Olahraga</th><td><%= project.sport || '-' %></td></tr>
+            <tr><th>Jenis Bahan</th><td><%= project.fabrics || '-' %></td></tr>
+            <tr><th>Ekspedisi / Resi</th><td><%= project.courier || '-' %> <%= project.tracking_no ? '· ' + project.tracking_no : '' %></td></tr>
+            <tr><th>Dibuat oleh</th><td><%= project.dibuat_oleh || '-' %></td></tr>
+            <tr><th>Keterangan</th><td><%= project.description || '-' %></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>🔗 Tracking Customer</h3></div>
+      <div class="card-body">
+        <% if (!project.customer_id) { %>
+          <p class="subtext" style="margin:0">Project ini belum dikaitkan ke customer. Pilih customer di menu Edit Project agar customer bisa memantau progresnya sendiri.</p>
+        <% } else { %>
+          <p class="subtext" style="margin-top:0">Bagikan link ini ke <b><%= project.customer_name %></b> supaya mereka bisa memantau sendiri (hanya melihat data miliknya):</p>
+          <% const lk = trackPath(project.customer_id); %>
+          <div class="link-box">
+            <input type="text" id="trackInput" value="<%= absUrl(lk) %>" readonly onclick="this.select()">
+            <button class="btn btn-primary btn-sm" type="button" onclick="document.getElementById('trackInput').select(); try{document.execCommand('copy')}catch(e){}; alert('Link disalin:\n' + document.getElementById('trackInput').value)">📋 Salin</button>
+            <a class="btn btn-light btn-sm" href="<%= url(lk) %>" target="_blank">👁 Buka</a>
+          </div>
+          <div class="help" style="margin-top:8px">Atau customer login sendiri dengan No. HP <b><%= project.customer_phone || '-' %></b> + No. Invoice / Kode Project <b><%= project.code %></b>.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>💵 Margin Project</h3></div>
+      <div class="card-body">
+        <table class="tbl">
+          <tbody>
+            <tr><th>Nilai Project</th><td class="num mono"><%= util.rp(project.total_price) %></td></tr>
+            <tr><th>Pemasukan tercatat</th><td class="num mono" style="color:var(--green)"><%= util.rp(project.revenue) %></td></tr>
+            <tr><th>Biaya operasional</th><td class="num mono" style="color:var(--red)">- <%= util.rp(project.expenseTotal) %></td></tr>
+            <tr><th>Biaya bahan terpakai</th><td class="num mono" style="color:var(--red)">- <%= util.rp(project.materialCost) %></td></tr>
+            <tr><th>Estimasi Margin</th><td class="num mono"><b><%= util.rp(project.margin) %></b></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <% if (perm.input) { %>
+    <div class="card no-print">
+      <div class="card-head"><h3>✍️ Catatan Progress &amp; Ubah Status</h3></div>
+      <div class="card-body">
+        <form method="post" action="<%= url('/projects/' + project.id + '/progress') %>">
+          <div class="field" style="margin-bottom:12px">
+            <label>Status Project</label>
+            <select name="project_status">
+              <% STATUS.forEach(function(s){ %><option value="<%= s %>" <%= project.status === s ? 'selected' : '' %>><%= s %></option><% }); %>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:12px">
+            <label>Catatan / Update ke Customer</label>
+            <textarea name="detail_note" placeholder="cth: ACC desain dari customer, lanjut printing"></textarea>
+          </div>
+          <% project.stages.forEach(function(s){ %>
+            <input type="hidden" name="stage_id" value="<%= s.id %>">
+            <input type="hidden" name="status" value="<%= s.status %>">
+            <input type="hidden" name="note" value="<%= s.note || '' %>">
+          <% }); %>
+          <button class="btn btn-primary btn-sm" type="submit">Simpan Update</button>
+        </form>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>🧶 Bahan Terpakai Project Ini</h3><div class="spacer"></div><span class="badge b-blue"><%= util.rp(project.materialCost) %></span></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tanggal</th><th>Bahan</th><th class="num">Qty</th><th class="num">Nilai</th></tr></thead>
+          <tbody>
+          <% if (!project.materials.length) { %><tr><td colspan="4"><div class="empty">Belum ada bahan yang dicatat untuk project ini.</div></td></tr><% } %>
+          <% project.materials.forEach(function(r){ %>
+            <tr>
+              <td class="nowrap"><%= util.dmy(r.date) %></td>
+              <td><%= r.material_name || '-' %><div class="subtext"><%= r.note || '' %></div></td>
+              <td class="num mono"><%= util.angka(r.qty) %> <%= r.unit || '' %></td>
+              <td class="num mono"><%= util.rp(r.total) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>💸 Biaya &amp; Barang Rijek Project Ini</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th class="num">Nominal</th></tr></thead>
+          <tbody>
+          <% if (!project.expenses.length && !project.rejectRows.length) { %><tr><td colspan="4"><div class="empty">Belum ada biaya atau barang rijek.</div></td></tr><% } %>
+          <% project.expenses.forEach(function(r){ %>
+            <tr>
+              <td class="nowrap"><%= util.dmy(r.date) %></td>
+              <td><span class="badge b-red">Biaya</span></td>
+              <td><%= r.description || r.category %></td>
+              <td class="num mono"><%= util.rp(r.amount) %></td>
+            </tr>
+          <% }); %>
+          <% project.rejectRows.forEach(function(r){ %>
+            <tr>
+              <td class="nowrap"><%= util.dmy(r.date) %></td>
+              <td><span class="badge b-amber">Rijek</span></td>
+              <td><%= r.item_name %> — <%= r.reason || r.action %></td>
+              <td class="num mono"><%= util.rp(r.loss_cost) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🕓 Riwayat Update Project</h3></div>
+  <div class="card-body">
+    <ul class="log-list">
+      <% if (!project.logs.length) { %><li class="subtext">Belum ada riwayat.</li><% } %>
+      <% project.logs.forEach(function(l){ %>
+        <li>
+          <b><%= l.stage_name || '-' %></b>
+          <span class="badge <%= l.status === 'Selesai' ? 'b-green' : (l.status === 'Proses' ? 'b-amber' : 'b-grey') %>"><%= l.status || '-' %></span>
+          <% if (l.note) { %> — <%= l.note %><% } %>
+          <div class="t"><%= l.created_at %> · oleh <%= l.oleh || 'sistem' %></div>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+</div>
+<%- include('../partials/foot') %>

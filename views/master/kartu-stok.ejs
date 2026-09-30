@@ -1,0 +1,104 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Kartu Stok — <%= material.name %></h1>
+    <div class="sub">Riwayat mutasi stok bahan · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblKartu','kartu-stok-<%= material.name %>',{title:'Kartu Stok: <%= material.name %>',period:'<%= p.label %>',sheet:'Kartu Stok',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/master/bahan') %>">← Daftar Bahan</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Stok Saat Ini</div>
+    <div class="kpi-value"><%= util.angka(material.stock) %> <%= material.unit %></div>
+    <div class="kpi-sub">minimum <%= util.angka(material.min_stock) %> <%= material.unit %></div>
+  </div>
+  <div class="kpi tone-blue">
+    <div class="kpi-label">Saldo Awal Periode</div>
+    <div class="kpi-value"><%= util.angka(saldoAwal) %></div>
+    <div class="kpi-sub">sebelum <%= util.dmy(p.from) %></div>
+  </div>
+  <div class="kpi tone-green">
+    <div class="kpi-label">Masuk Periode Ini</div>
+    <div class="kpi-value"><%= util.angka(masukPeriode) %> <%= material.unit %></div>
+    <div class="kpi-sub">dari pembelian / koreksi</div>
+  </div>
+  <div class="kpi tone-red">
+    <div class="kpi-label">Keluar Periode Ini</div>
+    <div class="kpi-value"><%= util.angka(keluarPeriode) %> <%= material.unit %></div>
+    <div class="kpi-sub">dipakai produksi</div>
+  </div>
+</div>
+
+<% if (perm.edit) { %>
+<div class="card no-print">
+  <div class="card-head"><h3>🔧 Koreksi Stok (Stok Opname)</h3></div>
+  <div class="card-body">
+    <form method="post" action="<%= url('/master/bahan/' + material.id + '/adjust') %>">
+      <div class="form-grid">
+        <div class="field">
+          <label>Jumlah Fisik Hasil Hitung (<%= material.unit %>) <span class="req">*</span></label>
+          <input type="text" class="qty" name="stock_fisik" value="<%= util.angka(material.stock) %>" required>
+          <div class="help">Isi stok nyata di gudang dalam satuan <b><%= material.unit %></b>. Boleh pakai koma, mis. <b>25,56</b>. Sistem mencatat selisihnya sebagai penyesuaian.</div>
+        </div>
+        <div class="field">
+          <label>Tanggal</label>
+          <input type="date" name="date" value="<%= util.todayISO() %>">
+        </div>
+        <div class="field span-2">
+          <label>Catatan</label>
+          <input type="text" name="note" placeholder="cth: stok opname akhir bulan, ada selisih 2 roll">
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="margin-top:12px">Simpan Koreksi Stok</button>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<form class="filters no-print" method="get" action="<%= url('/master/bahan/' + material.id + '/kartu-stok') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblKartu">
+        <thead>
+          <tr><th>Tanggal</th><th>Jenis</th><th class="num">Masuk (<%= material.unit %>)</th><th class="num">Keluar (<%= material.unit %>)</th><th class="num">Saldo (<%= material.unit %>)</th><th class="num">Harga Satuan</th><th class="num">Nilai</th><th>Keterangan</th><th>Dicatat oleh</th></tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="9"><div class="empty"><span class="big">📦</span>Belum ada mutasi stok pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><span class="badge <%= r.type === 'Masuk' ? 'b-green' : (r.type === 'Keluar' ? 'b-red' : 'b-blue') %>"><%= r.type %></span></td>
+            <td class="num mono" data-num="<%= r.type === 'Masuk' ? util.num(r.qty) : 0 %>"><%= r.type === 'Masuk' ? util.angka(r.qty) : '-' %></td>
+            <td class="num mono" data-num="<%= r.type === 'Keluar' ? util.num(r.qty) : 0 %>"><%= r.type === 'Keluar' ? util.angka(r.qty) : '-' %></td>
+            <td class="num mono" data-num="<%= util.num(r.saldo) %>"><%= util.angka(r.saldo) %></td>
+            <td class="num mono" data-num="<%= util.num(r.unit_cost) %>"><%= util.rp(r.unit_cost) %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) %>"><%= util.rp(r.total) %></td>
+            <td>
+              <%= r.source || '-' %>
+              <% if (r.input_qty && r.input_unit && r.input_unit !== material.unit) { %> · diisi <%= util.angka(r.input_qty) %> <%= r.input_unit %><% } %>
+              <% if (r.project_code) { %> · <a href="<%= url('/projects/' + r.project_id) %>"><%= r.project_code %></a><% } %>
+              <% if (r.note) { %><div class="subtext"><%= r.note %></div><% } %>
+            </td>
+            <td><%= r.oleh || '-' %></td>
+          </tr>
+        <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,21 @@
+<% const presets = [['bulan','Bulan ini'],['lalu','Bulan lalu'],['7','7 hari terakhir'],['30','30 hari terakhir'],['tahun','Tahun ini'],['custom','Rentang tanggal'],['semua','Semua periode']]; %>
+<div class="field">
+  <label>Periode</label>
+  <select name="preset" onchange="if(this.value!=='custom'){this.form.submit();}">
+    <% presets.forEach(function(pr){ %>
+      <option value="<%= pr[0] %>" <%= p.preset === pr[0] ? 'selected' : '' %>><%= pr[1] %></option>
+    <% }); %>
+  </select>
+</div>
+<div class="field">
+  <label>Dari tanggal</label>
+  <input type="date" name="from" value="<%= p.isAll ? '' : p.from %>">
+</div>
+<div class="field">
+  <label>Sampai tanggal</label>
+  <input type="date" name="to" value="<%= p.isAll ? '' : p.to %>">
+</div>
+<div class="field">
+  <label>&nbsp;</label>
+  <button class="btn btn-light btn-sm" type="submit">Terapkan</button>
+</div>

@@ -1,0 +1,243 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Halo, <%= user.name %> 👋</h1>
+    <div class="sub">Ringkasan keuangan &amp; produksi <%= data ? '' : '' %> sampai hari ini — <%= util.dmyLong(util.todayISO()) %></div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/pemasukan/baru') %>">+ Pemasukan</a>
+    <a class="btn btn-light btn-sm" href="<%= url('/transaksi/pengeluaran/baru') %>">+ Pengeluaran</a>
+    <a class="btn btn-primary btn-sm" href="<%= url('/projects/baru') %>">+ Project Baru</a>
+  </div>
+</div>
+
+<%- include('partials/flash') %>
+
+<% if (reminder && reminder.length) { %>
+<div class="modal-back" id="modalReminder">
+  <div class="modal">
+    <div class="modal-head" style="background:var(--red-bg)">
+      <span style="font-size:20px">⏰</span>
+      <h3>Perhatian! <%= reminder.length %> project mendekati / melewati deadline</h3>
+    </div>
+    <div class="modal-body">
+      <p class="subtext" style="margin-top:0">Batas peringatan: H-<%= warnDays %> dari deadline. Segera koordinasikan dengan tim produksi.</p>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Kode</th><th>Project</th><th>Deadline</th><th>Status</th></tr></thead>
+          <tbody>
+          <% reminder.forEach(function(r){ %>
+            <tr>
+              <td class="mono"><%= r.code %></td>
+              <td><%= r.name %><div class="subtext"><%= r.customer_name || '-' %></div></td>
+              <td class="nowrap"><%= util.dmy(r.deadline) %></td>
+              <td><%- include('partials/deadline', { info: r.info, priority: r.priority }) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modalReminder')">Tutup</button>
+      <a class="btn btn-primary" href="<%= url('/projects?only=urgent') %>">Lihat Semua Project Mendesak</a>
+    </div>
+  </div>
+</div>
+<script>window.__autoReminder = true;</script>
+<% } %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Total Kas (Utama + Petty)</div>
+    <div class="kpi-value"><%= util.rp(data.cashTotal) %></div>
+    <div class="kpi-sub">Kas utama <%= util.rp(data.mainCash) %> · Petty <%= util.rp(data.pettyBalance) %></div>
+  </div>
+  <div class="kpi tone-green">
+    <div class="kpi-label">Pemasukan Bulan Ini</div>
+    <div class="kpi-value"><%= util.rp(data.incomeMonth) %></div>
+    <div class="kpi-sub">Penjualan tercatat <%= util.rp(data.saleMonth) %></div>
+  </div>
+  <div class="kpi tone-red">
+    <div class="kpi-label">Pengeluaran Bulan Ini</div>
+    <div class="kpi-value"><%= util.rp(data.expenseMonth) %></div>
+    <div class="kpi-sub">Pembelian bahan <%= util.rp(data.purchaseMonth) %></div>
+  </div>
+  <% if (canReportFin) { %>
+  <div class="kpi tone-<%= data.profitMonth >= 0 ? 'green' : 'red' %>">
+    <div class="kpi-label">Laba Kotor Bulan Ini</div>
+    <div class="kpi-value"><%= util.rp(data.profitMonth) %></div>
+    <div class="kpi-sub">Pemasukan − pengeluaran − pembelian</div>
+  </div>
+  <% } %>
+  <div class="kpi tone-amber">
+    <div class="kpi-label">Piutang (Belum Dibayar)</div>
+    <div class="kpi-value"><%= util.rp(data.receivable) %></div>
+    <div class="kpi-sub">Dari penjualan yang belum lunas</div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Hutang ke Supplier</div>
+    <div class="kpi-value"><%= util.rp(data.payable) %></div>
+    <div class="kpi-sub">Dari pembelian yang belum lunas</div>
+  </div>
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Project Aktif</div>
+    <div class="kpi-value"><%= data.projectStats.aktif || 0 %> project</div>
+    <div class="kpi-sub"><%= data.projectStats.selesai || 0 %> selesai · <%= data.projectStats.urgent || 0 %> ditandai urgent</div>
+  </div>
+  <div class="kpi tone-<%= (data.projectStats.urgent || 0) > 0 ? 'red' : 'green' %>">
+    <div class="kpi-label">Alarm Deadline (H-<%= warnDays %>)</div>
+    <div class="kpi-value"><%= (data.projects || []).filter(function(x){ return ['overdue','urgent'].indexOf(x.info.level) > -1; }).length %> project</div>
+    <div class="kpi-sub">Perlu tindakan segera</div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head">
+      <h3>🔔 Project Mendesak / Dekat Deadline</h3>
+      <div class="spacer"></div>
+      <a class="btn btn-light btn-sm no-print" href="<%= url('/projects?only=urgent') %>">Semua</a>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Project</th><th>Deadline</th><th>Progres</th><th>Alarm</th></tr></thead>
+          <tbody>
+          <% const urg = (data.projects || []).filter(function(x){ return ['overdue','urgent'].indexOf(x.info.level) > -1; }); %>
+          <% if (!urg.length) { %>
+            <tr><td colspan="4"><div class="empty"><span class="big">👍</span>Tidak ada project yang dekat deadline. Aman!</div></td></tr>
+          <% } %>
+          <% urg.forEach(function(r){ %>
+            <tr class="<%= r.info.level === 'overdue' ? 'row-urgent' : 'row-warn' %>">
+              <td>
+                <a href="<%= url('/projects/' + r.id) %>"><b><%= r.code %></b></a>
+                <div class="subtext"><%= r.name %> · <%= r.customer_name || 'tanpa customer' %></div>
+              </td>
+              <td class="nowrap"><%= util.dmy(r.deadline) %></td>
+              <td style="min-width:110px">
+                <div class="progress <%= r.info.level === 'overdue' ? 'amber' : '' %>"><span style="width:<%= r.progress || 0 %>%"></span></div>
+                <div class="subtext"><%= r.done_stages || 0 %>/<%= r.total_stages || 0 %> tahap</div>
+              </td>
+              <td class="nowrap"><%- include('partials/deadline', { info: r.info, priority: r.priority }) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>📊 Pemasukan vs Pengeluaran (6 Bulan)</h3></div>
+    <div class="card-body">
+      <% const maxV = Math.max(1, Math.max.apply(null, data.chart.map(function(c){ return Math.max(c.inc, c.exp); }))); %>
+      <div class="chart">
+        <% data.chart.forEach(function(c){ %>
+          <div class="bar-wrap">
+            <div class="bars">
+              <div class="bar in" style="height:<%= Math.max(3, Math.round(c.inc / maxV * 150)) %>px" title="Masuk <%= util.rp(c.inc) %>"></div>
+              <div class="bar out" style="height:<%= Math.max(3, Math.round(c.exp / maxV * 150)) %>px" title="Keluar <%= util.rp(c.exp) %>"></div>
+            </div>
+            <div class="lbl"><%= c.label %></div>
+          </div>
+        <% }); %>
+      </div>
+      <div class="legend" style="margin-top:10px">
+        <span><i style="background:#1d4ed8"></i> Pemasukan</span>
+        <span><i style="background:#dc2626"></i> Pengeluaran + Pembelian</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>🧵 Project Sedang Berjalan</h3><div class="spacer"></div><a class="btn btn-light btn-sm no-print" href="<%= url('/projects') %>">Kelola</a></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Project</th><th>Tahap Sekarang</th><th>Progress</th><th>Sisa Hari</th></tr></thead>
+          <tbody>
+          <% if (!data.projects.length) { %><tr><td colspan="4"><div class="empty">Belum ada project aktif.</div></td></tr><% } %>
+          <% data.projects.forEach(function(r){ %>
+            <tr>
+              <td><a href="<%= url('/projects/' + r.id) %>"><b><%= r.code %></b></a><div class="subtext"><%= r.name %></div></td>
+              <td><%= r.current_stage || '-' %></td>
+              <td style="min-width:110px">
+                <div class="progress <%= r.info.level === 'overdue' ? 'amber' : (r.progress === 100 ? 'green' : '') %>"><span style="width:<%= r.progress %>%"></span></div>
+                <div class="subtext"><%= r.progress %>%</div>
+              </td>
+              <td class="nowrap"><%- include('partials/deadline', { info: r.info, priority: r.priority }) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🧾 Transaksi Terbaru</h3></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th class="num">Nominal</th></tr></thead>
+          <tbody>
+          <% if (!data.recent.length) { %><tr><td colspan="4"><div class="empty">Belum ada transaksi.</div></td></tr><% } %>
+          <% data.recent.forEach(function(r){ %>
+            <tr>
+              <td class="nowrap"><%= util.dmy(r.date) %></td>
+              <td><span class="badge <%= r.jenis === 'Pemasukan' ? 'b-green' : 'b-red' %>"><%= r.jenis %></span></td>
+              <td><%= util.truncated(r.ket, 44) %></td>
+              <td class="num mono"><%= r.sign %><%= util.angka(r.amount) %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>⚠️ Stok Bahan Menipis</h3><div class="spacer"></div><a class="btn btn-light btn-sm no-print" href="<%= url('/master/bahan') %>">Kelola Stok</a></div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Bahan</th><th class="num">Stok</th><th class="num">Minimum</th><th>Status</th></tr></thead>
+          <tbody>
+          <% if (!data.lowStock.length) { %><tr><td colspan="4"><div class="empty">Semua stok bahan di atas minimum.</div></td></tr><% } %>
+          <% data.lowStock.forEach(function(r){ %>
+            <tr>
+              <td><a href="<%= url('/master/bahan/' + r.id + '/kartu-stok') %>"><%= r.name %></a><div class="subtext"><%= r.code || '-' %></div></td>
+              <td class="num mono"><%= util.angka(r.stock) %> <%= r.unit %></td>
+              <td class="num mono"><%= util.angka(r.min_stock) %></td>
+              <td><span class="badge <%= util.num(r.stock) <= 0 ? 'b-red' : 'b-amber' %>"><%= util.num(r.stock) <= 0 ? 'Habis' : 'Menipis' %></span></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🪜 Beban Tahapan Project Aktif</h3></div>
+    <div class="card-body">
+      <div class="bar-list">
+        <% const maxStage = Math.max(1, Math.max.apply(null, stageSummary.map(function(s){ return s.jumlah || 0; }))); %>
+        <% stageSummary.forEach(function(s){ %>
+          <div class="row">
+            <span><%= s.name %></span><span class="mono"><%= s.jumlah || 0 %> project</span>
+            <div class="track"><span style="width:<%= Math.round((s.jumlah || 0) / maxStage * 100) %>%"></span></div>
+          </div>
+        <% }); %>
+      </div>
+      <p class="subtext" style="margin-bottom:0">Menunjukkan berapa project aktif yang sudah menyelesaikan tiap tahapan.</p>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

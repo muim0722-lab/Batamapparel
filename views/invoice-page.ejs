@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · <%= company %></title>
+<link rel="stylesheet" href="<%= url('/css/app.css') %>">
+<style>
+  body.inv-body { background: #e8ecf3; padding: 16px 12px 40px; }
+  .inv-shell { margin: 0 auto; }
+  .inv-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .inv-toolbar .grow { margin-left: auto; }
+  .inv-paper { background: #fff; box-shadow: 0 6px 26px rgba(12, 32, 60, .18); border-radius: 4px; padding: 6mm; width: max-content; }
+  .inv-note { text-align: center; color: #5b6b82; font-size: 12px; margin-top: 12px; max-width: 640px; margin-left: auto; margin-right: auto; }
+  @media print {
+    body.inv-body { background: #fff; padding: 0; }
+    .inv-paper { box-shadow: none; border-radius: 0; padding: 0; width: auto; }
+  }
+</style>
+</head>
+<body class="inv-body">
+<div class="inv-shell">
+  <div class="inv-toolbar no-print">
+    <button class="btn btn-primary" data-print="a5">🖨 Cetak A5</button>
+    <button class="btn btn-primary" data-print="2up">🖨 2 Invoice / lembar A4</button>
+    <% if (typeof backTo !== 'undefined' && backTo) { %>
+      <a class="btn btn-outline" href="<%= url(backTo) %>">← Kembali</a>
+    <% } %>
+    <a class="btn btn-light grow" href="<%= url('/transaksi/penjualan/' + row.id) %>">Detail Invoice</a>
+  </div>
+
+  <div class="inv-paper">
+    <div class="sheet">
+      <div class="inv-copy"><%- include('partials/invoice', { row: row, logoSrc: logoSrc }) %></div>
+      <div class="inv-copy dupe" aria-hidden="true"><%- include('partials/invoice', { row: row, logoSrc: logoSrc }) %></div>
+    </div>
+  </div>
+
+  <p class="inv-note no-print">
+    <b>Cetak A5</b> — 1 invoice per halaman (pakai kertas A5, atau pilih A5 di dialog cetak).<br>
+    <b>2 Invoice / lembar A4</b> — 2 rangkap sekaligus dalam 1 lembar A4 (pilih kertas A4, dan pastikan <i>Scale: Default / 100%</i>).
+  </p>
+</div>
+<script>window.__XLSX_URL = '<%= url('/vendor/xlsx.full.min.js') %>';</script>
+<script src="<%= url('/js/app.js') %>"></script>
+</body>
+</html>

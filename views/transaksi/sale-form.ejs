@@ -1,0 +1,275 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= row ? 'Edit Invoice ' + row.number : 'Invoice Baru' %></h1>
+    <div class="sub">Isi seperti blanko invoice toko — bisa langsung dicetak A4</div>
+  </div>
+  <div class="page-actions no-print">
+    <% if (row) { %><a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/' + row.id + '/invoice') %>" target="_blank">👁 Pratinjau Invoice</a><% } %>
+    <a class="btn btn-outline btn-sm" href="<%= url('/transaksi/penjualan') %>">← Daftar Invoice</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form method="post" action="<%= url('/transaksi/penjualan/save') %>">
+  <input type="hidden" name="id" value="<%= row ? row.id : 0 %>">
+
+  <div class="card">
+    <div class="card-head"><h3>🗂 Informasi Invoice</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>No. Invoice <span class="req">*</span></label>
+          <input type="text" name="number" value="<%= row ? row.number : nextNumber %>" required>
+        </div>
+        <div class="field">
+          <label>Tanggal <span class="req">*</span></label>
+          <input type="date" name="date" value="<%= row ? row.date : util.todayISO() %>" required>
+        </div>
+        <div class="field">
+          <label>Customer (data master)</label>
+          <select name="customer_id" id="selCustomer">
+            <option value="">— pilih customer —</option>
+            <% customers.forEach(function(c){ %>
+              <option value="<%= c.id %>" data-phone="<%= c.phone || '' %>" data-name="<%= c.name %>" <%= row && String(row.customer_id) === String(c.id) ? 'selected' : '' %>><%= c.name %><%= c.phone ? ' — ' + c.phone : '' %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Kepada</label>
+          <input type="text" name="to_name" id="inpTo" value="<%= row ? row.to_name || '' : '' %>" placeholder="nama pemesan / nama tim">
+        </div>
+        <div class="field">
+          <label>No. Telp</label>
+          <input type="text" name="phone" id="inpPhone" value="<%= row ? row.phone || '' : '' %>" placeholder="08xxxxxxxxxx">
+        </div>
+        <div class="field">
+          <label>Marketer / Penerima Order</label>
+          <input type="text" name="market" value="<%= row ? row.market || '' : '' %>" placeholder="nama marketer">
+        </div>
+        <div class="field">
+          <label>Deadline</label>
+          <input type="date" name="deadline" value="<%= row ? row.deadline || '' : '' %>">
+        </div>
+        <div class="field">
+          <label>Kaitkan ke Project</label>
+          <select name="project_id" id="selProject">
+            <option value="">— tidak dikaitkan —</option>
+            <% projects.forEach(function(pr){ %>
+              <option value="<%= pr.id %>" <%= row && String(row.project_id) === String(pr.id) ? 'selected' : '' %>><%= pr.code %> — <%= pr.name %></option>
+            <% }); %>
+          </select>
+          <div class="help">Dikaitkan supaya progress produksinya bisa dilihat customer lewat link tracking.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🏸 Digunakan Untuk / Bahan / Sablon / Posisi</h3></div>
+    <div class="card-body">
+      <div class="form-grid one">
+        <div class="field">
+          <label>DIGUNAKAN UNTUK</label>
+          <div class="opt-grid">
+            <% opts.sports.forEach(function(o){ %>
+              <label class="opt"><input type="checkbox" name="sport" value="<%= o %>" <%= row && String(row.sport || '').split(',').map(function(s){return s.trim().toUpperCase();}).includes(o.toUpperCase()) ? 'checked' : '' %>> <span><%= o %></span></label>
+            <% }); %>
+          </div>
+        </div>
+        <div class="field">
+          <label>JENIS BAHAN</label>
+          <div class="opt-grid">
+            <% opts.fabrics.forEach(function(o){ %>
+              <label class="opt"><input type="checkbox" name="fabrics" value="<%= o %>" <%= row && String(row.fabrics || '').split(',').map(function(s){return s.trim().toUpperCase();}).includes(o.toUpperCase()) ? 'checked' : '' %>> <span><%= o %></span></label>
+            <% }); %>
+          </div>
+        </div>
+        <div class="field">
+          <label>JENIS SABLON</label>
+          <div class="opt-grid">
+            <% opts.prints.forEach(function(o){ %>
+              <label class="opt"><input type="checkbox" name="prints" value="<%= o %>" <%= row && String(row.prints || '').split(',').map(function(s){return s.trim().toUpperCase();}).includes(o.toUpperCase()) ? 'checked' : '' %>> <span><%= o %></span></label>
+            <% }); %>
+          </div>
+        </div>
+        <div class="field">
+          <label>POSISI</label>
+          <div class="opt-grid">
+            <% opts.positions.forEach(function(o){ %>
+              <label class="opt"><input type="checkbox" name="positions" value="<%= o %>" <%= row && String(row.positions || '').split(',').map(function(s){return s.trim().toUpperCase();}).includes(o.toUpperCase()) ? 'checked' : '' %>> <span><%= o %></span></label>
+            <% }); %>
+          </div>
+        </div>
+        <div class="field">
+          <label>NOTE (tercetak di kotak NOTE)</label>
+          <textarea name="invoice_note" placeholder="cth: nama punggung &amp; nomor, warna kerah, permintaan khusus"><%= row ? row.invoice_note || '' : '' %></textarea>
+        </div>
+      </div>
+      <div class="help">Daftar pilihan ini bisa Anda ubah di Pengaturan → Kop &amp; Blanko Invoice.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>📋 Item Pesanan</h3>
+      <div class="spacer"></div>
+      <span class="subtext">Harga satuan = harga dasar + opsi tambahan (XXL, lengan panjang, kerah)</span>
+      <button class="btn btn-light btn-sm no-print" type="button" onclick="addItemRow('itemsBody','tplItem','price')">+ Tambah Baris</button>
+    </div>
+    <div class="card-body tight">
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="min-width:210px">Item / Keterangan</th>
+              <th style="width:90px">Qty</th>
+              <th style="width:150px">Harga Dasar</th>
+              <th style="width:230px">Opsi Tambahan</th>
+              <th style="width:130px" class="num">Harga Satuan</th>
+              <th style="width:130px" class="num">Subtotal</th>
+              <th class="no-export no-print" style="width:50px"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <% const rowsItems = (items && items.length) ? items : [{ description: '', qty: '', base_price: '', addons: '' }]; %>
+            <% rowsItems.forEach(function(it){ %>
+              <%
+                const pickedNames = String(it.addons || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+                  .map(function(s){ return s.replace(/\s*\(\+.*$/, ''); });
+                // invoice lama (sebelum fitur opsi) menyimpan harga di unit_price saja
+                const baseVal = (util.num(it.base_price) === 0 && util.num(it.addon_total) === 0)
+                  ? util.num(it.unit_price) : util.num(it.base_price);
+              %>
+              <tr>
+                <td><input type="text" name="item_desc" value="<%= it.description || '' %>" placeholder="cth: Jersey full printing"></td>
+                <td><input type="number" step="0.01" min="0" class="it-qty" name="item_qty" value="<%= (it.qty === '' || it.qty === undefined) ? '' : util.num(it.qty) %>" placeholder="0"></td>
+                <td><input type="text" class="money it-price" name="item_price" value="<%= baseVal ? baseVal : '' %>" placeholder="0"></td>
+                <td class="addon-cell">
+                  <details class="addon-box">
+                    <summary><span class="addon-summary">Opsi tambahan</span></summary>
+                    <div class="addon-list">
+                      <% addonList.forEach(function(a){ %>
+                        <label class="opt small">
+                          <input type="checkbox" class="addon-chk" data-id="<%= a.id %>" data-amount="<%= util.num(a.amount) %>" <%= pickedNames.indexOf(a.name) > -1 ? 'checked' : '' %>>
+                          <span><%= a.name %> <b>(+<%= util.angka(a.amount) %>)</b></span>
+                        </label>
+                      <% }); %>
+                    </div>
+                  </details>
+                  <input type="hidden" class="it-addons" name="item_addons" value="">
+                </td>
+                <td class="num mono it-unit">Rp 0</td>
+                <td class="num mono it-sub">Rp 0</td>
+                <td class="no-export no-print"><button class="btn btn-danger btn-icon" type="button" onclick="removeItemRow(this,'itemsBody','price')">✕</button></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <template id="tplItem">
+        <td><input type="text" name="item_desc" value="" placeholder="cth: Jersey full printing"></td>
+        <td><input type="number" step="0.01" min="0" class="it-qty" name="item_qty" value="" placeholder="0"></td>
+        <td><input type="text" class="money it-price" name="item_price" value="" placeholder="0"></td>
+        <td class="addon-cell">
+          <details class="addon-box">
+            <summary><span class="addon-summary">Opsi tambahan</span></summary>
+            <div class="addon-list">
+              <% addonList.forEach(function(a){ %>
+                <label class="opt small">
+                  <input type="checkbox" class="addon-chk" data-id="<%= a.id %>" data-amount="<%= util.num(a.amount) %>">
+                  <span><%= a.name %> <b>(+<%= util.angka(a.amount) %>)</b></span>
+                </label>
+              <% }); %>
+            </div>
+          </details>
+          <input type="hidden" class="it-addons" name="item_addons" value="">
+        </td>
+        <td class="num mono it-unit">Rp 0</td>
+        <td class="num mono it-sub">Rp 0</td>
+        <td class="no-export no-print"><button class="btn btn-danger btn-icon" type="button" onclick="removeItemRow(this,'itemsBody','price')">✕</button></td>
+      </template>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><h3>💳 Pembayaran &amp; Diskon</h3></div>
+      <div class="card-body">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Diskon (%)</label>
+            <input type="number" step="0.01" min="0" max="100" id="inp-disc-pct" name="disc_pct" value="<%= row ? util.num(row.disc_pct) || '' : '' %>" placeholder="0" oninput="recalcItems('itemsBody','price')">
+          </div>
+          <div class="field">
+            <label>Diskon (Rp) — dipakai bila Diskon % kosong</label>
+            <input type="text" class="money" id="inp-discount" name="discount" value="<%= row ? util.num(row.discount) || '' : '' %>" placeholder="0" oninput="recalcItems('itemsBody','price')">
+          </div>
+          <div class="field">
+            <label>DP / Uang Muka Diterima (Rp)</label>
+            <input type="text" class="money" id="inp-paid" name="paid" value="<%= dp ? util.num(dp.amount) : (row ? util.num(row.paid) : '') %>" placeholder="0" oninput="recalcItems('itemsBody','price')">
+            <div class="help">Sisa tagihan: <b id="txt-sisa">Rp 0</b>. DP lanjutan / pelunasan bisa dicatat dari halaman detail invoice.</div>
+          </div>
+          <div class="field">
+            <label>Metode Pembayaran</label>
+            <select name="method">
+              <% METHODS.forEach(function(m){ %><option value="<%= m %>" <%= row && row.method === m ? 'selected' : (row ? false : (m === 'Transfer Bank')) %>><%= m %></option><% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <label>Catatan Internal</label>
+            <input type="text" name="note" value="<%= row ? row.note || '' : '' %>" placeholder="opsional (tidak tercetak)">
+          </div>
+          <label class="check">
+            <input type="checkbox" name="catat" value="1" <%= !row || row.catat ? 'checked' : '' %>>
+            <span>Catat DP/pembayaran otomatis sebagai <b>Pemasukan</b></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>🧮 Ringkasan</h3></div>
+      <div class="card-body">
+        <table class="tbl">
+          <tbody>
+            <tr><th>Subtotal</th><td class="num mono" id="txt-subtotal">Rp 0</td></tr>
+            <tr><th>Diskon</th><td class="num mono" id="txt-discount">- Rp 0</td></tr>
+            <tr><th>TOTAL</th><td class="num mono" style="font-size:16px"><b id="txt-total">Rp 0</b></td></tr>
+            <tr><th>DP</th><td class="num mono" id="txt-dp">Rp 0</td></tr>
+            <tr><th>SISA</th><td class="num mono"><b id="txt-sisa2">Rp 0</b></td></tr>
+            <tr><th>Status</th><td class="num"><span class="badge b-blue" id="txt-status">Belum Lunas</span></td></tr>
+          </tbody>
+        </table>
+        <div class="no-print" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit">Simpan Invoice</button>
+          <button class="btn btn-light" type="submit" name="back" value="1">Simpan &amp; Buat Lagi</button>
+          <a class="btn btn-outline" href="<%= url('/transaksi/penjualan') %>">Batal</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<script>
+  // isi otomatis Kepada & No Telp dari customer terpilih (bila masih kosong)
+  (function () {
+    const sel = document.getElementById('selCustomer');
+    if (!sel) return;
+    sel.addEventListener('change', function () {
+      const o = sel.options[sel.selectedIndex];
+      const to = document.getElementById('inpTo'), ph = document.getElementById('inpPhone');
+      if (to && !to.value) to.value = o.getAttribute('data-name') || '';
+      if (ph && !ph.value) ph.value = o.getAttribute('data-phone') || '';
+    });
+  })();
+  document.querySelectorAll('#itemsBody input').forEach(function (i) {
+    i.addEventListener('input', function () { recalcItems('itemsBody', 'price'); });
+  });
+  document.querySelectorAll('#itemsBody').forEach(function (b) {
+    b.addEventListener('change', function (e) {
+      if (e.target.classList.contains('addon-chk')) recalcItems('itemsBody', 'price');
+    });
+  });
+  window.addEventListener('load', function () { recalcItems('itemsBody', 'price'); });
+</script>
+<%- include('../partials/foot') %>

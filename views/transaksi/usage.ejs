@@ -1,0 +1,166 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Bahan Terpakai</h1>
+    <div class="sub">Catat pemakaian bahan untuk produksi — stok otomatis berkurang · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblUsage','bahan-terpakai-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Bahan Terpakai',period:'<%= p.label %>',sheet:'Bahan Terpakai',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/master/bahan') %>">Kelola Stok</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="grid-kpi">
+  <div class="kpi tone-red">
+    <div class="kpi-label">Nilai Bahan Terpakai</div>
+    <div class="kpi-value"><%= util.rp(total) %></div>
+    <div class="kpi-sub"><%= rows.length %> catatan · <%= p.label %></div>
+  </div>
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Jenis Bahan Terpakai</div>
+    <div class="kpi-value"><%= byMaterial.length %></div>
+    <div class="kpi-sub">bahan berbeda</div>
+  </div>
+  <div class="kpi tone-amber">
+    <div class="kpi-label">Bahan Paling Boros</div>
+    <div class="kpi-value" style="font-size:17px"><%= byMaterial.length ? byMaterial[0].label : '-' %></div>
+    <div class="kpi-sub"><%= byMaterial.length ? util.rp(byMaterial[0].value) : util.rp(0) %></div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Tanpa Kait Project</div>
+    <div class="kpi-value"><%= rows.filter(function(r){ return !r.project_id; }).length %></div>
+    <div class="kpi-sub">catatan belum dikaitkan project</div>
+  </div>
+</div>
+
+<% if (perm.input) { %>
+<div class="card no-print">
+  <div class="card-head"><h3>➕ Catat Pemakaian Bahan</h3></div>
+  <div class="card-body">
+    <form method="post" action="<%= url('/transaksi/bahan-terpakai/save') %>">
+      <div class="form-grid">
+        <div class="field">
+          <label>Bahan <span class="req">*</span></label>
+          <select name="material_id" id="usageMaterial" required>
+            <option value="">— pilih bahan —</option>
+            <% materials.forEach(function(m){ %>
+              <option value="<%= m.id %>"
+                data-unit="<%= m.unit %>"
+                data-stock="<%= util.num(m.stock) %>"
+                data-avg="<%= util.num(m.avg_cost) %>"><%= m.name %> — stok <%= util.angka(m.stock) %> <%= m.unit %></option>
+            <% }); %>
+          </select>
+          <div class="help" id="usageConv" style="margin-top:6px"></div>
+        </div>
+        <div class="field">
+          <label>Jumlah Terpakai <span class="req">*</span> <span class="badge b-blue" id="usageUnitLabel">satuan</span></label>
+          <input type="text" class="qty" id="usageQty" name="qty" required placeholder="0" oninput="recalcUsageHint()">
+          <div class="help" id="usageHint" style="margin-top:6px"></div>
+          <div class="help">Boleh pakai koma, mis. <b>4,5</b>.</div>
+        </div>
+        <div class="field">
+          <label>Harga per Satuan (opsional)</label>
+          <input type="text" class="money" name="unit_cost" placeholder="otomatis dari harga rata-rata">
+          <div class="help">Kosongkan saja — sistem memakai harga rata-rata bahan.</div>
+        </div>
+        <div class="field">
+          <label>Tanggal</label>
+          <input type="date" name="date" value="<%= util.todayISO() %>">
+        </div>
+        <div class="field">
+          <label>Untuk Project</label>
+          <select name="project_id">
+            <option value="">— tidak dikaitkan —</option>
+            <% projects.forEach(function(pr){ %><option value="<%= pr.id %>"><%= pr.code %> — <%= pr.name %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Keterangan</label>
+          <input type="text" name="note" placeholder="cth: potong 24 pcs jersey Garuda FC">
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="margin-top:14px">Simpan Pemakaian</button>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<form class="filters no-print" method="get" action="<%= url('/transaksi/bahan-terpakai') %>">
+  <%- include('../partials/period') %>
+  <div class="field">
+    <label>Project</label>
+    <select name="project_id">
+      <option value="">Semua project</option>
+      <% projects.forEach(function(pr){ %><option value="<%= pr.id %>" <%= String(filters.project_id) === String(pr.id) ? 'selected' : '' %>><%= pr.code %> — <%= pr.name %></option><% }); %>
+    </select>
+  </div>
+  <div class="field" style="min-width:200px">
+    <label>Cari bahan / keterangan</label>
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="nama bahan / keterangan">
+  </div>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Filter</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblUsage">
+        <thead>
+          <tr><th>Tanggal</th><th>Bahan</th><th class="num">Qty Dipakai</th><th class="num">Harga Satuan</th><th class="num">Total Nilai</th><th>Project</th><th>Keterangan</th><th>Dicatat oleh</th><th class="no-export no-print">Aksi</th></tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="9"><div class="empty"><span class="big">🧶</span>Belum ada catatan pemakaian bahan pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><%= r.material_name || '-' %><div class="subtext"><%= r.unit || '' %></div></td>
+            <td class="num mono" data-num="<%= util.num(r.qty) %>"><%= util.angka(r.qty) %> <%= r.unit || '' %></td>
+            <td class="num mono" data-num="<%= util.num(r.unit_cost) %>"><%= util.rp(r.unit_cost) %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) %>"><%= util.rp(r.total) %></td>
+            <td><%= r.project_code ? r.project_code + ' — ' + r.project_name : '-' %></td>
+            <td><%= r.note || '-' %></td>
+            <td><%= r.oleh || '-' %></td>
+            <td class="no-export no-print nowrap">
+              <% if (r.material_id) { %><a class="btn btn-light btn-sm" href="<%= url('/master/bahan/' + r.material_id + '/kartu-stok') %>">Kartu Stok</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/transaksi/bahan-terpakai/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus catatan pemakaian ini? Stok bahan akan dikembalikan.">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">TOTAL NILAI BAHAN TERPAKAI</td>
+            <td class="num mono" data-num="<%= util.num(total) %>"><%= util.rp(total) %></td>
+            <td colspan="4" class="no-export"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Pemakaian per Bahan</h3></div>
+  <div class="card-body">
+    <% if (!byMaterial.length) { %><p class="subtext">Belum ada data.</p><% } %>
+    <div class="bar-list">
+      <% const maxM = Math.max(1, ...byMaterial.map(function(c){ return c.value; })); %>
+      <% byMaterial.forEach(function(c){ %>
+        <div class="row">
+          <span><%= c.label %></span><span class="mono"><%= util.rp(c.value) %></span>
+          <div class="track"><span style="width:<%= Math.round(c.value / maxM * 100) %>%"></span></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 184" width="200" height="184" role="img" aria-label="BATAM APPAREL">
+  <g fill="#000">
+    <!-- BARIS ATAS : bowl kiri (terbuka ke kanan) -->
+    <path d="M20 0 H104 V20 H46 A8 8 0 0 0 38 28 V42 A8 8 0 0 0 46 50 H104 V70 H20 A20 20 0 0 1 0 50 V20 A20 20 0 0 1 20 0 Z"/>
+    <!-- BARIS ATAS : bowl kanan (terbuka ke kiri) -->
+    <path d="M180 0 A20 20 0 0 1 200 20 V50 A20 20 0 0 1 180 70 H126 V50 H162 A8 8 0 0 0 170 42 V28 A8 8 0 0 0 162 20 H126 V0 Z"/>
+    <!-- PENGHUBUNG TENGAH -->
+    <rect x="0" y="70" width="126" height="26"/>
+    <!-- TIANG TENGAH (menyatu atas ke bawah) -->
+    <rect x="104" y="0" width="24" height="184"/>
+    <!-- BARIS BAWAH : bowl kiri (terbuka ke kanan) -->
+    <path d="M20 96 H104 V118 H46 A8 8 0 0 0 38 126 V152 A8 8 0 0 0 46 160 H104 V184 H20 A20 20 0 0 1 0 164 V116 A20 20 0 0 1 20 96 Z"/>
+    <!-- BARIS BAWAH : kaki kanan -->
+    <rect x="126" y="96" width="52" height="88"/>
+  </g>
+</svg>

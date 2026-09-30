@@ -1,0 +1,70 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Pembelian <%= row.number %></h1>
+    <div class="sub"><%= util.dmyLong(row.date) %> · Supplier: <b><%= row.supplier_name || '-' %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <% if (perm.edit) { %><a class="btn btn-primary btn-sm" href="<%= url('/transaksi/pembelian/' + row.id + '/edit') %>">Edit</a><% } %>
+    <% if (perm.del) { %>
+      <form method="post" action="<%= url('/transaksi/pembelian/' + row.id + '/delete') %>" style="display:inline" data-confirm="Hapus pembelian <%= row.number %>? Stok bahan akan dikembalikan.">
+        <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+      </form>
+    <% } %>
+    <a class="btn btn-outline btn-sm" href="<%= url('/transaksi/pembelian') %>">← Daftar</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="card">
+  <div class="card-head">
+    <h3>Item Bahan</h3>
+    <div class="spacer"></div>
+    <span class="badge <%= row.status === 'Lunas' ? 'b-green' : (row.status === 'Sebagian' ? 'b-amber' : 'b-red') %>"><%= row.status %></span>
+  </div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl">
+          <thead><tr><th>#</th><th>Bahan</th><th>Keterangan</th><th class="num">Qty Diisi</th><th class="num">Masuk Stok</th><th class="num">Harga Satuan</th><th class="num">Subtotal</th></tr></thead>
+          <tbody>
+            <% if (!row.items.length) { %><tr><td colspan="7"><div class="empty">Tidak ada item.</div></td></tr><% } %>
+            <% row.items.forEach(function(it, i){ %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= it.material_name || '(bukan bahan stok)' %><div class="subtext"><%= it.unit || '' %></div></td>
+                <td><%= it.description || '-' %></td>
+                <td class="num mono"><%= util.angka(util.num(it.input_qty) || util.num(it.qty)) %> <%= it.input_unit || it.unit || '' %></td>
+                <td class="num mono"><%= it.input_unit && it.input_unit !== it.unit ? util.angka(it.qty) + ' ' + it.unit : '—' %></td>
+                <td class="num mono"><%= util.rp(it.unit_cost) %> <span class="subtext">/ <%= it.unit || '' %></span></td>
+                <td class="num mono"><%= util.rp(it.subtotal) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="6">Subtotal</td><td class="num mono"><%= util.rp(row.subtotal) %></td></tr>
+            <tr><td colspan="6">Diskon</td><td class="num mono">- <%= util.rp(row.discount) %></td></tr>
+            <tr><td colspan="6">TOTAL</td><td class="num mono"><%= util.rp(row.total) %></td></tr>
+            <tr><td colspan="6">Sudah Dibayar</td><td class="num mono"><%= util.rp(row.paid) %></td></tr>
+            <tr><td colspan="6">Sisa Hutang</td><td class="num mono"><%= util.rp(util.num(row.total) - util.num(row.paid)) %></td></tr>
+          </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Info Supplier</h3></div>
+  <div class="card-body tight">
+    <table class="tbl">
+      <tbody>
+        <tr><th style="width:30%">Supplier</th><td><%= row.supplier_name || '-' %></td></tr>
+        <tr><th>Kontak</th><td><%= row.supplier_phone || '-' %></td></tr>
+        <tr><th>Catatan</th><td><%= row.note || '-' %></td></tr>
+        <tr><th>Dicatat oleh</th><td><%= row.oleh || '-' %></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/foot') %>

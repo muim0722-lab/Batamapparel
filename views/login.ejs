@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Masuk · <%= company %></title>
+<link rel="stylesheet" href="<%= url('/css/app.css') %>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230b2545'/><text y='70' x='50' text-anchor='middle' font-size='58' fill='white' font-family='Arial' font-weight='bold'>B</text></svg>">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="brand-logo"><img src="<%= logoSrc %>" alt="Logo <%= company %>"></div>
+      <h1><%= company %></h1>
+      <p><%= tagline || 'Custom Jersey Printing' %> — Sistem Keuangan &amp; Produksi Internal</p>
+    </div>
+    <div class="login-body">
+      <% if (error) { %><div class="alert alert-error"><span>⚠️</span><div><%= error %></div></div><% } %>
+      <form method="post" action="<%= url('/login') %>">
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="field" style="margin-bottom:14px">
+          <label>Username</label>
+          <input type="text" name="username" autocomplete="username" required autofocus placeholder="username">
+        </div>
+        <div class="field" style="margin-bottom:18px">
+          <label>Password</label>
+          <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Masuk</button>
+      </form>
+
+      <% if (demoUsers && demoUsers.length) { %>
+      <div class="creds">
+        <b>Akun awal sistem (segera ganti passwordnya):</b><br>
+        <% demoUsers.forEach(function(u){ %>
+          <div style="margin-top:4px">• <%= roleLabel(u.role) %> — <code><%= u.username %></code> / <code><%= u.username %>123</code></div>
+        <% }); %>
+        <div class="subtext" style="margin-top:6px">Hak akses: Owner &amp; Leader bisa melihat laporan keuangan, Admin hanya input/edit, Staff hanya input.</div>
+      </div>
+      <% } %>
+    </div>
+    <div class="login-foot">Akses terbatas untuk karyawan <%= company %> &amp; admin terdaftar.</div>
+  </div>
+</div>
+</body>
+</html>

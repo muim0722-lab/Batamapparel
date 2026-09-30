@@ -1,0 +1,67 @@
+<%- include('../partials/portal-head') %>
+<div class="portal-hello">
+  <h1 style="font-size:19px;margin-bottom:2px">Halo, <%= customer.name %> 👋</h1>
+  <p style="color:#5b6b82;font-size:13px;margin:0">Berikut daftar pesanan Anda di <%= company %>. Klik salah satu untuk melihat detail proses produksinya.</p>
+</div>
+
+<div class="portal-stats">
+  <div class="pstat"><div class="pstat-lbl">Sedang Diproses</div><div class="pstat-val"><%= stats.aktif %></div></div>
+  <div class="pstat"><div class="pstat-lbl">Selesai</div><div class="pstat-val"><%= stats.selesai %></div></div>
+  <div class="pstat"><div class="pstat-lbl">Total Pesanan</div><div class="pstat-val"><%= projects.length %></div></div>
+  <div class="pstat"><div class="pstat-lbl">Sisa Tagihan</div><div class="pstat-val" style="font-size:15px"><%= util.rp(stats.piutang) %></div></div>
+</div>
+
+<div class="portal-card">
+  <h2 class="portal-h2">🧵 Proses Produksi</h2>
+  <% if (!projects.length) { %>
+    <div class="empty">Belum ada project atas nama Anda. Hubungi admin kami untuk informasi lebih lanjut.</div>
+  <% } %>
+  <div class="portal-list">
+    <% projects.forEach(function(p){ %>
+      <a class="pitem" href="<%= purl('/proyek/' + p.id) %>">
+        <div class="pitem-top">
+          <div>
+            <div class="pitem-code"><%= p.code %></div>
+            <div class="pitem-name"><%= p.name %></div>
+          </div>
+          <span class="badge <%= p.status === 'Selesai' ? 'b-green' : (p.status === 'Batal' ? 'b-grey' : (p.status === 'Revisi' ? 'b-amber' : 'b-blue')) %>"><%= p.status %></span>
+        </div>
+        <div class="progress <%= p.progress === 100 ? 'green' : '' %>"><span style="width:<%= p.progress %>%"></span></div>
+        <div class="pitem-meta">
+          <span><%= p.progress %>% selesai · <%= p.done_stages %>/<%= p.total_stages %> tahap</span>
+          <span>Tahap kini: <b><%= p.current_stage || (p.status === 'Selesai' ? 'Selesai' : 'Menunggu') %></b></span>
+        </div>
+        <div class="pitem-meta">
+          <span>Order: <%= util.dmy(p.order_date) %></span>
+          <span><% if (p.deadline) { %>Target selesai: <b><%= util.dmy(p.deadline) %></b><% } else { %>Target: menyusul<% } %></span>
+        </div>
+      </a>
+    <% }); %>
+  </div>
+</div>
+
+<div class="portal-card">
+  <h2 class="portal-h2">🧾 Invoice / Nota Saya</h2>
+  <% if (!sales.length) { %>
+    <div class="empty">Belum ada invoice atas nama Anda.</div>
+  <% } %>
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead><tr><th>No. Invoice</th><th>Tanggal</th><th class="num">Total</th><th class="num">Dibayar</th><th class="num">Sisa</th><th>Status</th><th class="no-print">Aksi</th></tr></thead>
+      <tbody>
+        <% sales.forEach(function(s){ %>
+          <tr>
+            <td class="mono nowrap"><%= s.number %></td>
+            <td class="nowrap"><%= util.dmy(s.date) %></td>
+            <td class="num mono"><%= util.rp(s.total) %></td>
+            <td class="num mono"><%= util.rp(s.paid) %></td>
+            <td class="num mono"><%= util.rp(util.num(s.total) - util.num(s.paid)) %></td>
+            <td><span class="badge <%= s.status === 'Lunas' ? 'b-green' : (s.status === 'Sebagian' ? 'b-amber' : 'b-red') %>"><%= s.status %></span></td>
+            <td class="no-print nowrap"><a class="btn btn-light btn-sm" href="<%= purl('/nota/' + s.id) %>">Lihat Invoice</a></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/portal-foot') %>

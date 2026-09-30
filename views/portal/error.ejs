@@ -1,0 +1,8 @@
+<%- include('../partials/portal-head') %>
+<div class="portal-card" style="text-align:center">
+  <div style="font-size:40px;margin-bottom:6px"><%= code === 404 ? '🔍' : '⚠️' %></div>
+  <h1 style="font-size:19px"><%= title %></h1>
+  <p style="color:#5b6b82;font-size:13.5px"><%= message %></p>
+  <a class="btn btn-primary" href="<%= purl('/') %>">Coba Masuk Lagi</a>
+</div>
+<%- include('../partials/portal-foot') %>

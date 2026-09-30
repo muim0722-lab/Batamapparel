@@ -1,0 +1,8 @@
+<%
+  if (info.level === 'overdue') { %><span class="badge b-overdue">⏰ TERLAMBAT <%= Math.abs(info.days) %> HARI</span><%
+  } else if (info.level === 'urgent') { %><span class="badge b-red">⏰ <%= info.text.toUpperCase() %></span><%
+  } else if (info.level === 'warning') { %><span class="badge b-amber">⏳ <%= info.text %></span><%
+  } else if (info.level === 'done') { %><span class="badge b-green">✔ Selesai</span><%
+  } else if (info.level === 'none') { %><span class="badge b-grey">Tanpa deadline</span><%
+  } else { %><span class="badge b-green">🕒 <%= info.text %></span><% } %>
+<% if (typeof priority !== 'undefined' && priority === 'Urgent') { %> <span class="badge b-purple">🔥 URGENT</span><% } %>

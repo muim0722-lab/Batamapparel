@@ -1,0 +1,173 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Panduan Pemakaian</h1>
+    <div class="sub">Penjelasan singkat biar pencatatan tidak salah — bisa dibaca ulang kapan saja</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak Panduan A4</button>
+  </div>
+</div>
+<%- include('partials/flash') %>
+
+<div class="card">
+  <div class="card-head"><h3>🧭 Alur Kerja Harian (urutan yang disarankan)</h3></div>
+  <div class="card-body">
+    <ol class="guide-list">
+      <li><b>Order masuk</b> → buka <b>Tracking Project</b> → <b>+ Project Baru</b>. Isi customer, deadline, jumlah, dan jenis olahraga/keterangan. Sistem otomatis membuat tahapan produksi (Order → Desain → Printing → Jahit → QC → Packing → Kirim → Selesai).</li>
+      <li><b>Buat invoice &amp; terima DP</b> → menu <b>Penjualan (Invoice)</b> → <b>+ Invoice Baru</b>. Centang bahan/sablon/posisi, pilih opsi tambahan (XXL, lengan panjang, kerah), isi <b>DP</b> yang diterima. Invoice bisa langsung dicetak A4.</li>
+      <li><b>Bagikan link tracking</b> → menu <b>Data Master → Customer</b> → tombol <b>🔗 Link Tracking</b> → kirim lewat WhatsApp. Customer bisa memantau sendiri tanpa mengganggu admin.</li>
+      <li><b>Belanja bahan</b> → menu <b>Pembelian Bahan</b>. Stok bahan otomatis bertambah dan harga rata-rata ikut dihitung.</li>
+      <li><b>Produksi jalan</b> → update tahapan di halaman project, catat <b>Bahan Terpakai</b> (stok berkurang otomatis), catat <b>Barang Rijek</b> bila ada yang gagal.</li>
+      <li><b>Biaya harian kecil</b> → menu <b>Petty Cash</b>; <b>biaya besar / transfer bank</b> → menu <b>Pengeluaran</b>.</li>
+      <li><b>Pelunasan</b> → di halaman detail invoice klik <b>Catat Pembayaran Baru</b> → sisa tagihan jadi berkurang &amp; pemasukan tercatat.</li>
+      <li><b>Akhir bulan</b> → buka <b>Laporan</b> (khusus Leader/Owner) → cek Laba Rugi, Arus Kas, Stok, Project &amp; Margin → export Excel / cetak A4 untuk arsip.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>❓ Penjualan (Invoice) vs Pemasukan — apa bedanya?</h3></div>
+  <div class="card-body">
+    <div class="grid grid-2">
+      <div>
+        <h4 style="color:var(--navy-700)">🧾 Penjualan / Invoice = "TAGIHAN"</h4>
+        <ul class="guide-list">
+          <li>Mencatat <b>nilai yang harus dibayar customer</b>, walaupun belum dibayar sama sekali.</li>
+          <li>Berisi rincian item, jumlah, harga, diskon, serta identitas invoice (tempat cetak nota toko).</li>
+          <li>Kalau belum lunas → muncul di <b>Piutang</b>.</li>
+          <li>Ini yang dipakai saat membuat &amp; mencetak invoice, dan jadi dasar perhitungan margin project.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--green)">💰 Pemasukan = "UANG YANG BENAR-BENAR MASUK"</h4>
+        <ul class="guide-list">
+          <li>Mencatat uang nyata yang masuk kas / rekening / QRIS.</li>
+          <li>Bisa DP, pelunasan, jasa desain, atau pemasukan lain di luar invoice.</li>
+          <li>Dipakai untuk <b>Arus Kas</b> dan bagian pendapatan pada <b>Laba Rugi</b>.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-top:6px">
+      <span>💡</span>
+      <div>
+        <b>Praktiknya cukup satu langkah:</b> saat menyimpan invoice, biarkan centang <b>"Catat DP/pembayaran otomatis sebagai Pemasukan"</b>.
+        Aplikasi otomatis membuat catatan pemasukan sebesar DP saja (bukan total invoice). Sisa tagihan dilunasi → buka detail invoice → <b>Catat Pembayaran Baru</b> → pemasukan berikutnya tercatat sendiri.
+        Jadi menu <b>Pemasukan</b> dipakai manual hanya untuk uang masuk yang <b>tidak</b> berasal dari invoice (mis. jasa desain lepas, bunga bank, penjualan sisa stok).
+      </div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Contoh kejadian</th><th>Dicatat di mana?</th><th>Bukti di laporan</th></tr></thead>
+      <tbody>
+        <tr><td>Order jersey Rp 3.000.000, customer baru bayar DP Rp 1.000.000</td><td>Invoice Rp 3.000.000 + DP Rp 1.000.000</td><td>Piutang Rp 2.000.000; Kas masuk Rp 1.000.000</td></tr>
+        <tr><td>Tiga hari kemudian customer transfer pelunasan Rp 2.000.000</td><td>Detail invoice → Catat Pembayaran Baru</td><td>Piutang Rp 0; Kas masuk Rp 2.000.000</td></tr>
+        <tr><td>Terima Rp 300.000 untuk jasa desain lepas (tanpa invoice)</td><td>Menu Pemasukan → + Pemasukan</td><td>Pendapatan bertambah Rp 300.000</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>💳 DP (Uang Muka) — cara pakai di aplikasi</h3></div>
+  <div class="card-body">
+    <ul class="guide-list">
+      <li>Di form invoice ada kolom <b>DP / Uang Muka Diterima</b>. Isi jumlah DP-nya, dan status otomatis jadi <i>Sebagian</i>.</li>
+      <li>Setiap pembayaran tercatat dengan jenis <b>DP</b> atau <b>Pelunasan</b> lengkap dengan tanggal, metode, dan penerima — bisa dilihat customer juga di halaman tracking mereka.</li>
+      <li><b>SISA</b> otomatis dihitung: Total − Diskon − DP − Pelunasan. Begitu lunas, status berubah <i>Lunas</i>.</li>
+      <li>Nominal DP di invoice juga tercetak pada blanko (baris <b>DP</b> dan <b>SISA</b>), sama seperti nota manual Anda.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>👛 Petty Cash vs Pengeluaran — bedanya di mana?</h3></div>
+  <div class="card-body">
+    <div class="grid grid-2">
+      <div>
+        <h4 style="color:var(--navy-700)">👛 Petty Cash = "kas kecil di laci/tangan admin"</h4>
+        <ul class="guide-list">
+          <li>Sumber dana kecil yang disiapkan untuk pengeluaran harian: bensin kurir, konsumsi rapat, parkir, galon, ATK kecil.</li>
+          <li>Dicatat saat <b>diisi</b> dari kas utama (Masuk) dan saat <b>dipakai</b> (Keluar).</li>
+          <li>Saldo petty cash berkurang setiap uang keluar, jadi ketahuan kalau uang di laci sudah habis.</li>
+          <li>Pengeluaran petty <b>otomatis tercatat juga</b> di menu Pengeluaran dengan sumber dana <i>Petty Cash</i> — jadi laporan laba/rugi tidak menghitungnya dua kali.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--red)">💸 Pengeluaran = "biaya resmi usaha dari kas/bank"</h4>
+        <ul class="guide-list">
+          <li>Gaji karyawan, sewa tempat, listrik &amp; air, internet, iklan, perawatan mesin printing, cicilan alat.</li>
+          <li>Uangnya dari <b>kas utama</b> atau <b>transfer bank</b>, biasanya nominal lebih besar dan ada bukti transfer/nota.</li>
+          <li>Masuk ke <b>Laba Rugi</b> sebagai biaya operasional dan ke <b>Arus Kas</b> sebagai kas keluar.</li>
+          <li>Pembelian bahan baku punya menu sendiri (<b>Pembelian Bahan</b>) karena sekaligus menambah stok — jangan dicatat di Pengeluaran agar stok dan HPP tetap benar.</li>
+        </ul>
+      </div>
+    </div>
+    <table class="tbl" style="margin-top:6px">
+      <thead><tr><th>Kejadian</th><th>Menu yang dipakai</th><th>Kenapa</th></tr></thead>
+      <tbody>
+        <tr><td>Beli bensin kurir Rp 50.000 pakai uang laci</td><td>Petty Cash → Keluar</td><td>Uangnya dari kas kecil, saldo petty berkurang otomatis</td></tr>
+        <tr><td>Admin ambil Rp 500.000 dari kas utama untuk mengisi petty</td><td>Petty Cash → Masuk</td><td>Kas utama berkurang, petty bertambah (perpindahan kas, bukan biaya baru)</td></tr>
+        <tr><td>Bayar listrik bulanan Rp 800.000 via transfer</td><td>Pengeluaran</td><td>Biaya resmi usaha dari bank</td></tr>
+        <tr><td>Beli 10 roll bahan dryfit dari supplier</td><td>Pembelian Bahan</td><td>Sekaligus menambah stok bahan</td></tr>
+        <tr><td>Jersey 2 pcs gagal cetak</td><td>Barang Rijek</td><td>Mencatat kerugian tanpa mengganggu stok</td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-warn" style="margin-top:6px">
+      <span>⚠️</span>
+      <div><b>Jangan catat dua kali.</b> Uang yang sudah dicatat di Petty Cash <b>tidak perlu</b> diinput lagi di Pengeluaran (sudah otomatis), dan belanja bahan cukup di menu Pembelian Bahan saja.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🔗 Tracking Customer (member login)</h3></div>
+  <div class="card-body">
+    <ul class="guide-list">
+      <li>Di menu <b>Customer</b>, klik <b>🔗 Link Tracking</b> pada nama customer → muncul link khusus untuk customer itu.</li>
+      <li>Kirim link lewat WhatsApp (tombol 💬) atau salin lalu kirim manual. Customer tinggal klik, tanpa daftar akun.</li>
+      <li>Customer juga bisa login sendiri di halaman <b>/track</b> memakai <b>No. HP</b> + <b>No. Invoice / Kode Project</b> — berguna kalau link-nya hilang.</li>
+      <li>Yang bisa dilihat customer <b>hanya data miliknya sendiri</b>: progres tahapan produksi, target selesai, riwayat update produksi, dan invoice beserta status DP/pelunasan. Data customer lain tidak bisa diakses.</li>
+      <li>Kalau ada masalah, tombol <b>Buat Link Baru</b> mematikan link lama, dan <b>Matikan Akses</b> menutup portal customer tersebut.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🏷️ Opsi Tambahan Harga &amp; Cetak Invoice</h3></div>
+  <div class="card-body">
+    <ul class="guide-list">
+      <li>Di menu <b>Opsi Tambahan Harga</b> tersedia bawaan: Ukuran XXL +10.000, Lengan Panjang +15.000, Kerah Polo Vintage +10.000, Kerah Polo Kancing +15.000, Kerah Wangki/Shanghai +15.000. Harga &amp; nama bisa Anda ubah, tambah, atau nonaktifkan sendiri.</li>
+      <li>Saat membuat invoice, setiap baris item punya tombol <b>Opsi tambahan</b> — centang yang dipakai, harga satuan langsung dihitung dan rinciannya tercetak di invoice.</li>
+      <li>Cetak invoice toko: dari daftar invoice klik <b>Invoice</b>, atau di detail invoice klik <b>🖨 Cetak Invoice Toko</b>. Ukuran A4 portrait, lengkap dengan kolom bahan, sablon, posisi, deadline, dan kolom DP/SISA.</li>
+      <li>Kop invoice (nama, alamat, admin, rekening bank, catatan bawah) dan <b>logo</b> bisa Anda ubah di <b>Pengaturan → Kop &amp; Blanko Invoice</b>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🔐 Siapa Boleh Membuka Laporan Apa</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Laporan</th><th>Owner</th><th>Leader</th><th>Admin &amp; Staff</th></tr></thead>
+        <tbody>
+          <tr><td>Penjualan/Invoice, Pembelian, Stok &amp; Pemakaian Bahan</td><td>✅</td><td>✅</td><td>—</td></tr>
+          <tr><td>Petty Cash, Barang Rijek, Project &amp; Margin</td><td>✅</td><td>✅</td><td>—</td></tr>
+          <tr><td><b>Ringkasan Keuangan</b></td><td>✅</td><td>—</td><td>—</td></tr>
+          <tr><td><b>Laba Rugi</b></td><td>✅</td><td>—</td><td>—</td></tr>
+          <tr><td><b>Arus Kas</b></td><td>✅</td><td>—</td><td>—</td></tr>
+          <tr><td>Input &amp; edit transaksi harian</td><td>✅</td><td>✅</td><td>✅ (Admin: input+edit, Staff: input saja)</td></tr>
+          <tr><td>Kelola user &amp; pengaturan</td><td>✅</td><td>Pengaturan saja</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-body">
+    <p class="subtext" style="margin:0">
+      Tiga laporan keuangan inti (Ringkasan, Laba Rugi, Arus Kas) sengaja hanya untuk <b>Owner</b>.
+      Bila Leader membuka alamat laporan tersebut, sistem otomatis mengarahkan ke Laporan Penjualan.
+      Admin &amp; Staff sama sekali tidak bisa membuka menu Laporan. Detail lengkap ada di menu <b>User &amp; Hak Akses</b>.
+    </p>
+  </div>
+</div>
+<%- include('partials/foot') %>

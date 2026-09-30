@@ -1,0 +1,68 @@
+<%- include('../partials/portal-head') %>
+<div class="portal-hello">
+  <a class="portal-back" href="<%= purl('/beranda') %>">← Kembali ke daftar pesanan</a>
+  <h1 style="font-size:19px;margin:6px 0 2px"><%= p.code %> — <%= p.name %></h1>
+  <div style="color:#5b6b82;font-size:13px">
+    Order <%= util.dmy(p.order_date) %>
+    <% if (p.deadline) { %> · Target selesai <b><%= util.dmy(p.deadline) %></b><% } %>
+    <% if (p.qty) { %> · <%= util.angka(p.qty) %> pcs<% } %>
+  </div>
+</div>
+
+<div class="portal-card">
+  <div class="portal-prog-head">
+    <div class="progress <%= p.progress === 100 ? 'green' : '' %>"><span style="width:<%= p.progress %>%"></span></div>
+    <div class="portal-prog-pct"><%= p.progress %>%</div>
+  </div>
+  <div style="color:#5b6b82;font-size:12.5px;margin-bottom:14px"><%= p.done_stages %> dari <%= p.total_stages %> tahapan selesai · Status: <b><%= p.status %></b></div>
+
+  <ul class="timeline">
+    <% p.stages.forEach(function(s, i){ %>
+      <li class="step <%= s.status === 'Selesai' ? 'done' : (s.status === 'Proses' ? 'proses' : '') %>">
+        <span class="dot"><%= s.status === 'Selesai' ? '✓' : (i + 1) %></span>
+        <div class="step-name"><%= s.stage_name %></div>
+        <div class="step-meta">
+          <%= s.status === 'Selesai' ? 'Selesai' : (s.status === 'Proses' ? 'Sedang dikerjakan' : 'Menunggu') %>
+          <% if (s.status !== 'Belum' && s.updated_at) { %> · <%= util.dmy(s.updated_at) %><% } %>
+        </div>
+      </li>
+    <% }); %>
+  </ul>
+</div>
+
+<div class="portal-card">
+  <h2 class="portal-h2">📋 Detail Order</h2>
+  <table class="tbl">
+    <tbody>
+      <tr><th style="width:40%">Kode Project</th><td class="mono"><%= p.code %></td></tr>
+      <tr><th>Jenis Olahraga / Kegunaan</th><td><b><%= p.sport || '-' %></b></td></tr>
+      <tr><th>Jenis Bahan</th><td><%= p.fabrics || '-' %></td></tr>
+      <tr><th>Keterangan</th><td><%= p.description || '-' %></td></tr>
+      <tr><th>Jumlah</th><td><%= util.angka(p.qty) %> pcs</td></tr>
+      <tr><th>Target Selesai</th><td><%= p.deadline ? util.dmyLong(p.deadline) : '-' %></td></tr>
+      <tr><th>Pengiriman / Ekspedisi</th><td><%= p.courier || '-' %><%= p.tracking_no ? ' · No. Resi ' + p.tracking_no : '' %></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<% if (p.logs && p.logs.length) { %>
+<div class="portal-card">
+  <h2 class="portal-h2">🕓 Kabar Terbaru dari Produksi</h2>
+  <ul class="log-list">
+    <% p.logs.forEach(function(l){ %>
+      <li>
+        <b><%= l.stage_name %></b> — <span class="badge <%= l.status === 'Selesai' ? 'b-green' : 'b-amber' %>"><%= l.status %></span>
+        <% if (l.note) { %><div style="font-size:12.6px;color:#41536b;margin-top:3px"><%= l.note %></div><% } %>
+        <div class="t"><%= util.dmy(l.created_at) %></div>
+      </li>
+    <% }); %>
+  </ul>
+</div>
+<% } %>
+
+<div class="portal-card">
+  <p style="font-size:13px;color:#5b6b82;margin:0">
+    Ada pertanyaan soal pesanan ini? Hubungi admin <%= company %><% if (companyPhone) { %> di <a href="https://wa.me/<%= waNumber(companyPhone) %>" target="_blank" rel="noopener"><%= companyPhone %></a><% } %>.
+  </p>
+</div>
+<%- include('../partials/portal-foot') %>

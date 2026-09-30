@@ -1,0 +1,101 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Laporan Arus Kas</h1>
+    <div class="sub"><%= m.company %> · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4 Portrait</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ Cetak A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblArusKas','arus-kas-<%= p.from %>-sd-<%= p.to %>',{title:'Laporan Arus Kas',period:'<%= p.label %>',sheet:'Arus Kas',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/laporan') + qs({}) %>">Semua Laporan</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form class="filters no-print" method="get" action="<%= url('/laporan/arus-kas') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy"><div class="kpi-label">Saldo Kas Awal</div><div class="kpi-value"><%= util.rp(totalOpening) %></div><div class="kpi-sub">kas utama + petty cash</div></div>
+  <div class="kpi tone-green"><div class="kpi-label">Kas Masuk Periode Ini</div><div class="kpi-value"><%= util.rp(masukKas) %></div><div class="kpi-sub">semua pemasukan</div></div>
+  <div class="kpi tone-red"><div class="kpi-label">Kas Keluar Periode Ini</div><div class="kpi-value"><%= util.rp(keluarBiaya + keluarPembelian) %></div><div class="kpi-sub">biaya <%= util.rp(keluarBiaya) %> · bahan <%= util.rp(keluarPembelian) %></div></div>
+  <div class="kpi tone-<%= totalClosing >= 0 ? 'green' : 'red' %>"><div class="kpi-label">Saldo Kas Akhir</div><div class="kpi-value"><%= util.rp(totalClosing) %></div><div class="kpi-sub">kas utama <%= util.rp(mainClosing) %> · petty <%= util.rp(pettyClosing) %></div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Buku Kas Utama</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblArusKas">
+        <thead><tr><th style="width:60%">Keterangan</th><th class="num">Jumlah</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+          <tr><td colspan="3" style="background:#f7f9fc"><b>A. SALDO AWAL</b></td></tr>
+          <tr><td>Saldo kas utama awal periode</td><td></td><td class="num mono" data-num="<%= util.num(mainOpening) %>"><%= util.rp(mainOpening) %></td></tr>
+          <tr><td>Saldo petty cash awal periode</td><td></td><td class="num mono" data-num="<%= util.num(pettyOpening) %>"><%= util.rp(pettyOpening) %></td></tr>
+          <tr><td><b>Total saldo awal (A)</b></td><td></td><td class="num mono" data-num="<%= util.num(totalOpening) %>"><b><%= util.rp(totalOpening) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>B. PENERIMAAN</b></td></tr>
+          <% byMethod.forEach(function(r){ %>
+            <tr><td style="padding-left:26px">Pemasukan via <%= r.label %></td>
+              <td class="num mono" data-num="<%= util.num(r.value) %>"><%= util.rp(r.value) %></td><td></td></tr>
+          <% }); %>
+          <% if (!byMethod.length) { %><tr><td style="padding-left:26px">Tidak ada penerimaan</td><td class="num mono" data-num="0">0</td><td></td></tr><% } %>
+          <tr><td><b>Total penerimaan (B)</b></td><td></td><td class="num mono" data-num="<%= util.num(masukKas) %>"><b><%= util.rp(masukKas) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>C. PENGELUARAN</b></td></tr>
+          <% byExpenseCat.forEach(function(r){ %>
+            <tr><td style="padding-left:26px">Biaya — <%= r.label %></td>
+              <td class="num mono" data-num="<%= util.num(r.value) %>"><%= util.rp(r.value) %></td><td></td></tr>
+          <% }); %>
+          <tr><td style="padding-left:26px">Pembayaran pembelian bahan</td>
+            <td class="num mono" data-num="<%= util.num(keluarPembelian) %>"><%= util.rp(keluarPembelian) %></td><td></td></tr>
+          <tr><td style="padding-left:26px">Pengisian petty cash (transfer internal)</td>
+            <td class="num mono" data-num="<%= util.num(isiPetty) %>"><%= util.rp(isiPetty) %></td><td></td></tr>
+          <tr><td><b>Total pengeluaran (C)</b></td><td></td>
+            <td class="num mono" data-num="<%= util.num(keluarBiaya + keluarPembelian + isiPetty) %>"><b><%= util.rp(keluarBiaya + keluarPembelian + isiPetty) %></b></td></tr>
+
+          <tr><td colspan="3" style="background:#f7f9fc"><b>D. SALDO AKHIR</b></td></tr>
+          <tr><td>Saldo kas utama akhir</td><td></td><td class="num mono" data-num="<%= util.num(mainClosing) %>"><%= util.rp(mainClosing) %></td></tr>
+          <tr><td>Saldo petty cash akhir</td><td></td><td class="num mono" data-num="<%= util.num(pettyClosing) %>"><%= util.rp(pettyClosing) %></td></tr>
+          <tr><td><b>TOTAL SALDO KAS AKHIR (A + B − C)</b></td><td></td>
+            <td class="num mono" data-num="<%= util.num(totalClosing) %>"><b style="font-size:15px"><%= util.rp(totalClosing) %></b></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Mutasi Petty Cash Periode Ini</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th class="num">Masuk</th><th class="num">Keluar</th></tr></thead>
+        <tbody>
+        <% if (!pettyRows.length) { %><tr><td colspan="6"><div class="empty">Tidak ada mutasi petty cash pada periode ini.</div></td></tr><% } %>
+        <% pettyRows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap"><%= util.dmy(r.date) %></td>
+            <td><span class="badge <%= r.type === 'Masuk' ? 'b-green' : 'b-red' %>"><%= r.type %></span></td>
+            <td><%= r.category || '-' %></td>
+            <td><%= r.description || '-' %></td>
+            <td class="num mono"><%= r.type === 'Masuk' ? util.rp(r.amount) : '-' %></td>
+            <td class="num mono"><%= r.type === 'Keluar' ? util.rp(r.amount) : '-' %></td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">TOTAL</td>
+            <td class="num mono"><%= util.rp(isiPetty) %></td>
+            <td class="num mono"><%= util.rp(pakaiPetty) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

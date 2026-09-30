@@ -1,0 +1,120 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Invoice / Penjualan</h1>
+    <div class="sub">Semua tagihan jasa jersey + DP yang diterima · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblSales','penjualan-<%= p.from %>-sd-<%= p.to %>',{title:'Daftar Invoice / Penjualan',period:'<%= p.label %>',sheet:'Invoice',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-primary btn-sm" href="<%= url('/transaksi/penjualan/baru') %>">+ Invoice Baru</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="alert alert-info no-print">
+  <span>ℹ️</span>
+  <div>
+    <b>Bedanya dengan menu Pemasukan:</b> <b>Penjualan (Invoice)</b> = catatan tagihan ke customer, boleh belum dibayar (masuk piutang).
+    <b>Pemasukan</b> = uang yang benar-benar masuk kas/bank. Saat Anda isi <b>DP</b> atau pelunasan di invoice, aplikasi otomatis mencatatnya sebagai pemasukan —
+    jadi Anda tidak perlu input dua kali. <a href="<%= url('/panduan') %>">Baca panduan lengkap →</a>
+  </div>
+</div>
+
+<div class="alert alert-warn no-print" style="display:<%= (unpaid > 0) ? 'flex' : 'none' %>">
+  <span>💰</span>
+  <div>Ada <b><%= util.rp(unpaid) %></b> tagihan belum dibayar pada periode ini. Buka invoice lalu catat DP/pelunasan agar tercatat sebagai pemasukan.</div>
+</div>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Total Nilai Invoice</div>
+    <div class="kpi-value"><%= util.rp(total) %></div>
+    <div class="kpi-sub"><%= rows.length %> invoice · <%= p.label %></div>
+  </div>
+  <div class="kpi tone-green">
+    <div class="kpi-label">Sudah Dibayar (DP + Pelunasan)</div>
+    <div class="kpi-value"><%= util.rp(paid) %></div>
+    <div class="kpi-sub"><%= total > 0 ? Math.round(paid / total * 100) : 0 %>% dari nilai invoice</div>
+  </div>
+  <div class="kpi tone-red">
+    <div class="kpi-label">Piutang (Sisa Tagihan)</div>
+    <div class="kpi-value"><%= util.rp(unpaid) %></div>
+    <div class="kpi-sub">belum masuk kas</div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Invoice Lunas</div>
+    <div class="kpi-value"><%= rows.filter(function(r){ return r.status === 'Lunas'; }).length %> invoice</div>
+    <div class="kpi-sub">dari <%= rows.length %> invoice periode ini</div>
+  </div>
+</div>
+
+<form class="filters no-print" method="get" action="<%= url('/transaksi/penjualan') %>">
+  <%- include('../partials/period') %>
+  <div class="field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Semua status</option>
+      <% PAY_STATUS.forEach(function(s){ %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }); %>
+    </select>
+  </div>
+  <div class="field" style="min-width:200px">
+    <label>Cari nota / customer</label>
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="no. nota, customer, project">
+  </div>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Filter</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblSales">
+        <thead>
+          <tr>
+            <th>No. Invoice</th><th>Tanggal</th><th>Kepada / Customer</th><th>Project</th><th class="num">Item</th>
+            <th class="num">Total</th><th class="num">Dibayar</th><th class="num">Sisa</th><th>Status</th><th class="no-export no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="10"><div class="empty"><span class="big">🧾</span>Belum ada penjualan pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="mono nowrap"><a href="<%= url('/transaksi/penjualan/' + r.id) %>"><b><%= r.number %></b></a></td>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><%= r.to_name || r.customer_name || '-' %><div class="subtext"><%= r.sport || '' %></div></td>
+            <td><%= r.project_code || '-' %><div class="subtext"><%= r.project_name || '' %></div></td>
+            <td class="num mono" data-num="<%= util.num(r.jml_item) %>"><%= r.jml_item %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) %>"><%= util.rp(r.total) %></td>
+            <td class="num mono" data-num="<%= util.num(r.paid) %>"><%= util.rp(r.paid) %></td>
+            <td class="num mono" data-num="<%= util.num(r.total) - util.num(r.paid) %>"><%= util.rp(util.num(r.total) - util.num(r.paid)) %></td>
+            <td><span class="badge <%= r.status === 'Lunas' ? 'b-green' : (r.status === 'Sebagian' ? 'b-amber' : 'b-red') %>"><%= r.status %></span></td>
+            <td class="no-export no-print nowrap">
+              <a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/' + r.id) %>">Detail</a>
+              <a class="btn btn-light btn-sm" href="<%= url('/transaksi/penjualan/' + r.id + '/invoice') %>" target="_blank">Invoice</a>
+              <% if (perm.edit) { %><a class="btn btn-outline btn-sm" href="<%= url('/transaksi/penjualan/' + r.id + '/edit') %>">Edit</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/transaksi/penjualan/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus invoice <%= r.number %>? Pemasukan otomatisnya juga akan dihapus.">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">TOTAL</td>
+            <td class="num mono" data-num="<%= util.num(total) %>"><%= util.rp(total) %></td>
+            <td class="num mono" data-num="<%= util.num(paid) %>"><%= util.rp(paid) %></td>
+            <td class="num mono" data-num="<%= util.num(unpaid) %>"><%= util.rp(unpaid) %></td>
+            <td colspan="2" class="no-export"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

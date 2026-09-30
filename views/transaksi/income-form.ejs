@@ -1,0 +1,68 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= row.id ? 'Edit Pemasukan' : 'Pemasukan Baru' %></h1>
+    <div class="sub">Catat uang masuk dari customer / penjualan</div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-outline btn-sm" href="<%= url('/transaksi/pemasukan') %>">← Daftar Pemasukan</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form method="post" action="<%= url('/transaksi/pemasukan/save') %>">
+  <input type="hidden" name="id" value="<%= row.id || 0 %>">
+  <div class="card">
+    <div class="card-head"><h3>Detail Pemasukan</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Tanggal <span class="req">*</span></label>
+          <input type="date" name="date" value="<%= row.date %>" required>
+        </div>
+        <div class="field">
+          <label>Nominal (Rp) <span class="req">*</span></label>
+          <input type="text" class="money" name="amount" value="<%= row.amount !== '' ? util.num(row.amount) : '' %>" required placeholder="0">
+        </div>
+        <div class="field">
+          <label>Kategori</label>
+          <select name="category">
+            <% categories.forEach(function(c){ %><option value="<%= c %>" <%= row.category === c ? 'selected' : '' %>><%= c %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Metode Pembayaran</label>
+          <select name="method">
+            <% METHODS.forEach(function(m){ %><option value="<%= m %>" <%= row.method === m ? 'selected' : '' %>><%= m %></option><% }); %>
+          </select>
+        </div>
+        <div class="field span-2">
+          <label>Keterangan</label>
+          <input type="text" name="description" value="<%= row.description || '' %>" placeholder="cth: Pelunasan jersey Garuda FC 24 pcs">
+        </div>
+        <div class="field">
+          <label>Kaitkan ke Project (opsional)</label>
+          <select name="project_id">
+            <option value="">— tidak dikaitkan —</option>
+            <% projects.forEach(function(pr){ %>
+              <option value="<%= pr.id %>" <%= String(row.project_id) === String(pr.id) ? 'selected' : '' %>><%= pr.code %> — <%= pr.name %></option>
+            <% }); %>
+          </select>
+          <div class="help">Dikaitkan agar margin &amp; biaya per project bisa dihitung.</div>
+        </div>
+        <div class="field">
+          <label>Catatan Tambahan</label>
+          <input type="text" name="note" value="<%= row.note || '' %>" placeholder="opsional">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" type="submit">Simpan Pemasukan</button>
+      <button class="btn btn-light" type="submit" name="back" value="1">Simpan &amp; Tambah Lagi</button>
+      <a class="btn btn-outline" href="<%= url('/transaksi/pemasukan') %>">Batal</a>
+    </div>
+  </div>
+</form>
+<%- include('../partials/foot') %>

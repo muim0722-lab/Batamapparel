@@ -1,0 +1,19 @@
+{
+  "name": "batam-apparel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistem keuangan & tracking project Batam Apparel (custom jersey printing)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "xlsx": "^0.18.5"
+  }
+}

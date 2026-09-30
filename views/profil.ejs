@@ -1,0 +1,84 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div><h1>Profil Saya</h1><div class="sub">Ubah data diri dan password akun Anda</div></div>
+</div>
+<%- include('partials/flash') %>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h3>Data Diri</h3></div>
+    <div class="card-body">
+      <form method="post" action="<%= url('/profil/info') %>">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Nama Lengkap</label>
+            <input type="text" name="name" value="<%= user.name %>" required>
+          </div>
+          <div class="field">
+            <label>No. HP / WA</label>
+            <input type="text" name="phone" value="<%= user.phone || '' %>" placeholder="08xx">
+          </div>
+          <div class="field">
+            <label>Username</label>
+            <input type="text" value="<%= user.username %>" disabled>
+            <div class="help">Username hanya bisa diubah oleh Owner melalui menu User &amp; Hak Akses.</div>
+          </div>
+          <div class="field">
+            <label>Role / Hak Akses</label>
+            <input type="text" value="<%= roleLabel(user.role) %> — <%= roles[user.role].desc %>" disabled>
+          </div>
+          <div><button class="btn btn-primary" type="submit">Simpan Data Diri</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Ganti Password</h3></div>
+    <div class="card-body">
+      <form method="post" action="<%= url('/profil/password') %>">
+        <div class="form-grid one">
+          <div class="field">
+            <label>Password Lama</label>
+            <input type="password" name="old_password" required>
+          </div>
+          <div class="field">
+            <label>Password Baru</label>
+            <input type="password" name="new_password" required minlength="6">
+            <div class="help">Minimal 6 karakter.</div>
+          </div>
+          <div class="field">
+            <label>Ulangi Password Baru</label>
+            <input type="password" name="confirm_password" required minlength="6">
+          </div>
+          <div><button class="btn btn-primary" type="submit">Perbarui Password</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Hak Akses Role</h3></div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Role</th><th>Keterangan</th><th>Input</th><th>Edit</th><th>Hapus</th><th>Laporan Operasional</th><th>Laba Rugi / Arus Kas / Ringkasan</th></tr></thead>
+        <tbody>
+          <% ['owner','leader','admin','staff'].forEach(function(r){ %>
+            <tr>
+              <td><span class="role-badge role-<%= r %>"><%= roles[r].label %></span></td>
+              <td><%= roles[r].desc %></td>
+              <td><%= permsAll[r].input ? '✅' : '—' %></td>
+              <td><%= permsAll[r].edit ? '✅' : '—' %></td>
+              <td><%= permsAll[r].del ? '✅' : '—' %></td>
+              <td><%= permsAll[r].report ? '✅' : '—' %></td>
+              <td><%= permsAll[r].reportFin ? '✅' : '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('partials/foot') %>

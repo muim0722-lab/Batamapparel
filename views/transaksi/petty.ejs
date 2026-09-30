@@ -1,0 +1,138 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Petty Cash</h1>
+    <div class="sub">Kas kecil untuk kebutuhan harian · Periode <b><%= p.label %></b></div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblPetty','petty-cash-<%= p.from %>-sd-<%= p.to %>',{title:'Buku Petty Cash',period:'<%= p.label %>',sheet:'Petty Cash',by:'<%= user.name %>'})">⬇ Excel</button>
+    <% if (perm.settings) { %><a class="btn btn-light btn-sm" href="<%= url('/master/pengaturan') %>">Atur Saldo Awal</a><% } %>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<div class="alert alert-warn no-print">
+  <span>👛</span>
+  <div>
+    <b>Petty cash = kas kecil di laci/admin</b> untuk kebutuhan harian (bensin kurir, konsumsi, parkir, ATK kecil).
+    Isi <b>Masuk</b> saat mengambil uang dari kas utama, isi <b>Keluar</b> saat dipakai.
+    Pengeluaran petty cash <b>otomatis tercatat</b> di menu Pengeluaran (sumber dana: Petty Cash), jadi tidak perlu input dua kali.
+    Biaya besar seperti gaji, sewa, listrik, atau transfer bank dicatat di <a href="<%= url('/transaksi/pengeluaran') %>">Pengeluaran</a>.
+    <a href="<%= url('/panduan') %>">Baca panduan lengkap →</a>
+  </div>
+</div>
+
+<div class="grid-kpi">
+  <div class="kpi tone-navy">
+    <div class="kpi-label">Saldo Petty Cash Saat Ini</div>
+    <div class="kpi-value"><%= util.rp(balance.saldo) %></div>
+    <div class="kpi-sub">saldo awal <%= util.rp(balance.opening) %></div>
+  </div>
+  <div class="kpi tone-green">
+    <div class="kpi-label">Pengisian (Masuk) Periode Ini</div>
+    <div class="kpi-value"><%= util.rp(masukPeriode) %></div>
+    <div class="kpi-sub">transfer dari kas utama</div>
+  </div>
+  <div class="kpi tone-red">
+    <div class="kpi-label">Pemakaian (Keluar) Periode Ini</div>
+    <div class="kpi-value"><%= util.rp(keluarPeriode) %></div>
+    <div class="kpi-sub">otomatis masuk laporan pengeluaran</div>
+  </div>
+  <div class="kpi tone-purple">
+    <div class="kpi-label">Saldo Awal Periode</div>
+    <div class="kpi-value"><%= util.rp(saldoAwal) %></div>
+    <div class="kpi-sub"><%= p.label %></div>
+  </div>
+</div>
+
+<% if (perm.input) { %>
+<div class="card no-print">
+  <div class="card-head"><h3>➕ Catat Transaksi Petty Cash</h3></div>
+  <div class="card-body">
+    <form method="post" action="<%= url('/transaksi/petty-cash/save') %>">
+      <div class="form-grid">
+        <div class="field">
+          <label>Jenis <span class="req">*</span></label>
+          <select name="type">
+            <option value="Keluar">Keluar (pengeluaran)</option>
+            <option value="Masuk">Masuk (pengisian dari kas utama)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nominal (Rp) <span class="req">*</span></label>
+          <input type="text" class="money" name="amount" required placeholder="0">
+        </div>
+        <div class="field">
+          <label>Kategori</label>
+          <select name="category">
+            <% categories.forEach(function(c){ %><option value="<%= c %>"><%= c %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tanggal</label>
+          <input type="date" name="date" value="<%= util.todayISO() %>">
+        </div>
+        <div class="field span-2">
+          <label>Keterangan</label>
+          <input type="text" name="description" placeholder="cth: beli konsumsi rapat / bensin kurir">
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="margin-top:14px">Simpan Transaksi</button>
+      <span class="subtext" style="margin-left:10px">Pengeluaran petty cash otomatis tercatat di menu Pengeluaran (sumber dana: Petty Cash).</span>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<form class="filters no-print" method="get" action="<%= url('/transaksi/petty-cash') %>">
+  <%- include('../partials/period') %>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Terapkan</button></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblPetty">
+        <thead>
+          <tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Dicatat oleh</th><th class="num">Masuk</th><th class="num">Keluar</th><th class="num">Saldo</th><th class="no-export no-print">Aksi</th></tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="9"><div class="empty"><span class="big">👛</span>Belum ada transaksi petty cash pada periode ini.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap" data-export="<%= util.dmy(r.date) %>"><%= util.dmy(r.date) %></td>
+            <td><span class="badge <%= r.type === 'Masuk' ? 'b-green' : 'b-red' %>"><%= r.type %></span></td>
+            <td><%= r.category || '-' %></td>
+            <td><%= r.description || '-' %><% if (r.note) { %><div class="subtext"><%= r.note %></div><% } %></td>
+            <td><%= r.oleh || '-' %></td>
+            <td class="num mono" data-num="<%= r.type === 'Masuk' ? util.num(r.amount) : 0 %>"><%= r.type === 'Masuk' ? util.rp(r.amount) : '-' %></td>
+            <td class="num mono" data-num="<%= r.type === 'Keluar' ? util.num(r.amount) : 0 %>"><%= r.type === 'Keluar' ? util.rp(r.amount) : '-' %></td>
+            <td class="num mono" data-num="<%= util.num(r.saldo) %>"><%= util.rp(r.saldo) %></td>
+            <td class="no-export no-print nowrap">
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url('/transaksi/petty-cash/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus transaksi petty cash ini?">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">TOTAL PERIODE</td>
+            <td class="num mono" data-num="<%= util.num(masukPeriode) %>"><%= util.rp(masukPeriode) %></td>
+            <td class="num mono" data-num="<%= util.num(keluarPeriode) %>"><%= util.rp(keluarPeriode) %></td>
+            <td class="num mono" data-num="<%= util.num(balance.saldo) %>"><%= util.rp(balance.saldo) %></td>
+            <td class="no-export"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,6 @@
+<% if (typeof flash !== 'undefined' && flash && flash.m) { %>
+  <div class="alert alert-<%= flash.t === 'error' ? 'error' : (flash.t === 'warn' ? 'warn' : (flash.t === 'info' ? 'info' : 'success')) %> no-print">
+    <span><%= flash.t === 'error' ? '⚠️' : (flash.t === 'warn' ? '⏰' : (flash.t === 'info' ? 'ℹ️' : '✅')) %></span>
+    <div><%= flash.m %></div>
+  </div>
+<% } %>

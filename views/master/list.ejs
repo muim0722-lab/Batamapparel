@@ -1,0 +1,159 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= title %></h1>
+    <div class="sub">Data master pendukung transaksi &amp; laporan</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" data-print="landscape">↔ A4 Landscape</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblMaster','<%= table %>',{title:'<%= title %>',sheet:'<%= singular %>',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-primary btn-sm" href="<%= url(base + '/baru') %>">+ Tambah <%= singular %></a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<% if (typeof linkPanel !== 'undefined' && linkPanel) { %>
+<div class="card no-print" style="border:2px solid var(--navy-600)">
+  <div class="card-head" style="background:#f2f7ff">
+    <h3>🔗 Link Tracking untuk <%= linkPanel.customer.name %></h3>
+    <div class="spacer"></div>
+    <span class="badge <%= linkPanel.aktif ? 'b-green' : 'b-red' %>"><%= linkPanel.aktif ? 'Akses aktif' : 'Akses dimatikan' %></span>
+  </div>
+  <div class="card-body">
+    <p class="subtext" style="margin-top:0">
+      Customer ini punya <%= linkPanel.projects %> project &amp; <%= linkPanel.sales %> invoice. Kirim link di bawah lewat WhatsApp —
+      customer hanya bisa melihat project &amp; invoice <b>miliknya sendiri</b>, tidak bisa melihat data customer lain.
+    </p>
+    <div class="link-box">
+      <input type="text" id="linkInput" value="<%= linkPanel.abs %>" readonly onclick="this.select()">
+      <button class="btn btn-primary btn-sm" type="button" onclick="copyLink()">📋 Salin Link</button>
+      <% if (linkPanel.wa) { %>
+        <a class="btn btn-success btn-sm" target="_blank" rel="noopener"
+           href="https://wa.me/<%= linkPanel.wa %>?text=<%= encodeURIComponent('Halo ' + linkPanel.customer.name + ', terima kasih sudah order di ' + company + '! 🙌\n\nCek progres produksi jersey Anda kapan saja lewat link ini:\n' + linkPanel.abs + '\n\nAnda juga bisa login sendiri dengan No. HP ' + (linkPanel.customer.phone || '') + ' + nomor invoice Anda.\n\nSalam,\n' + company) %>">
+          💬 Kirim via WhatsApp
+        </a>
+      <% } %>
+      <a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="<%= url(linkPanel.path) %>">👁 Buka Link</a>
+    </div>
+    <div class="form-grid" style="margin-top:16px">
+      <div class="field">
+        <label>Cara customer login (alternatif link)</label>
+        <input type="text" value="No. HP: <%= linkPanel.customer.phone || '(belum diisi)' %> — No. Invoice / Kode Project" disabled>
+        <div class="help">Berikan No. HP yang terdaftar + nomor invoice/kode project kepada customer.</div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <form method="post" action="<%= url('/master/customer/' + linkPanel.customer.id + '/portal/toggle') %>" style="display:inline">
+            <button class="btn btn-outline btn-sm" type="submit"><%= linkPanel.aktif ? '🚫 Matikan Akses' : '✅ Buka Akses Lagi' %></button>
+          </form>
+          <form method="post" action="<%= url('/master/customer/' + linkPanel.customer.id + '/portal/regenerate') %>" style="display:inline"
+                data-confirm="Buat link baru? Link lama langsung tidak berlaku.">
+            <button class="btn btn-danger btn-sm" type="submit">♻️ Buat Link Baru</button>
+          </form>
+          <a class="btn btn-light btn-sm" href="<%= url('/master/customer') %>">Tutup Panel</a>
+        </div>
+      </div>
+    </div>
+    <% if (linkPanel.customer.portal_last) { %>
+      <p class="subtext" style="margin:10px 0 0">Terakhir dibuka customer: <%= linkPanel.customer.portal_last %></p>
+    <% } %>
+  </div>
+</div>
+<script>
+  function copyLink() {
+    const el = document.getElementById('linkInput');
+    el.select();
+    el.setSelectionRange(0, 9999);
+    try { document.execCommand('copy'); } catch (e) {}
+    if (navigator.clipboard) navigator.clipboard.writeText(el.value).catch(function () {});
+    alert('Link tracking disalin:\n' + el.value);
+  }
+</script>
+<% } %>
+
+<form class="filters no-print" method="get" action="<%= url(base) %>">
+  <div class="field" style="min-width:240px">
+    <label>Cari <%= singular %></label>
+    <input type="text" name="q" value="<%= q %>" placeholder="kata kunci...">
+  </div>
+  <div class="field"><label>&nbsp;</label><button class="btn btn-light btn-sm" type="submit">Cari</button></div>
+  <div class="field"><label>&nbsp;</label><a class="btn btn-outline btn-sm" href="<%= url(base) %>">Reset</a></div>
+</form>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblMaster">
+        <thead>
+          <tr>
+            <th>#</th>
+            <% cols.forEach(function(f){ %><th class="<%= f.type === 'number' ? 'num' : '' %>"><%= f.label %></th><% }); %>
+            <% if (table === 'materials') { %>
+              <th class="num">Stok Saat Ini</th><th class="num">Harga Rata-rata</th><th class="num">Nilai Stok</th><th>Status</th>
+            <% } %>
+            <% if (table === 'customers') { %>
+              <th>Tracking Customer</th><th>Login Terakhir</th>
+            <% } %>
+            <th class="no-export no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% if (!rows.length) { %>
+          <tr class="no-export"><td colspan="<%= cols.length + 3 + (table === 'customers' ? 2 : 0) %>"><div class="empty"><span class="big">📋</span>Belum ada data <%= singular.toLowerCase() %>.</div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r, i){ %>
+          <tr>
+            <td class="mono"><%= i + 1 %></td>
+            <% cols.forEach(function(f){ %>
+              <td class="<%= f.type === 'number' ? 'num mono' : '' %>" <%= f.type === 'number' ? 'data-num="' + util.num(r[f.name]) + '"' : '' %>>
+                <%= f.type === 'number' ? util.angka(r[f.name]) : (f.type === 'checkbox' ? (r[f.name] ? 'Ya' : 'Tidak') : (r[f.name] || '-')) %>
+              </td>
+            <% }); %>
+            <% if (table === 'materials') { %>
+              <td class="num mono" data-num="<%= util.num(r.stock) %>"><%= util.angka(r.stock) %> <%= r.unit %></td>
+              <td class="num mono" data-num="<%= util.num(r.avg_cost) %>"><%= util.rp(r.avg_cost) %></td>
+              <td class="num mono" data-num="<%= util.num(r.stock) * util.num(r.avg_cost) %>"><%= util.rp(util.num(r.stock) * util.num(r.avg_cost)) %></td>
+              <td>
+                <% if (util.num(r.stock) <= 0) { %><span class="badge b-red">Habis</span>
+                <% } else if (util.num(r.stock) <= util.num(r.min_stock)) { %><span class="badge b-amber">Menipis</span>
+                <% } else { %><span class="badge b-green">Aman</span><% } %>
+              </td>
+            <% } %>
+            <% if (table === 'customers') { %>
+              <td>
+                <% if (r.portal_active) { %><span class="badge b-green">Aktif</span><% } else { %><span class="badge b-grey">Dimatikan</span><% } %>
+                <% if (!r.portal_token) { %><div class="subtext">link belum dibuat</div><% } %>
+              </td>
+              <td class="nowrap"><span class="subtext"><%= r.portal_last || 'belum pernah' %></span></td>
+            <% } %>
+            <td class="no-export no-print nowrap">
+              <% if (table === 'customers') { %>
+                <a class="btn btn-primary btn-sm" href="<%= url(base + '?link=' + r.id) %>">🔗 Link Tracking</a>
+              <% } %>
+              <% if (table === 'materials') { %><a class="btn btn-light btn-sm" href="<%= url('/master/bahan/' + r.id + '/kartu-stok') %>">Kartu Stok</a><% } %>
+              <% if (perm.edit) { %><a class="btn btn-outline btn-sm" href="<%= url(base + '/' + r.id + '/edit') %>">Edit</a><% } %>
+              <% if (perm.del) { %>
+                <form method="post" action="<%= url(base + '/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus data <%= singular %> ini?">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+        <% if (table === 'materials') { %>
+        <tfoot>
+          <tr>
+            <td colspan="<%= cols.length + 1 %>">TOTAL NILAI PERSEDIAAN</td>
+            <td colspan="3" class="num mono" data-num="<%= rows.reduce(function(a, r){ return a + util.num(r.stock) * util.num(r.avg_cost); }, 0) %>"><%= util.rp(rows.reduce(function(a, r){ return a + util.num(r.stock) * util.num(r.avg_cost); }, 0)) %></td>
+            <td colspan="2" class="no-export"></td>
+          </tr>
+        </tfoot>
+        <% } %>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

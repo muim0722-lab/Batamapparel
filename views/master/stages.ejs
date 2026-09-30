@@ -1,0 +1,83 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1>Tahapan Tracking Project</h1>
+    <div class="sub">Atur urutan tahapan produksi — bisa ditambah, diubah, dinonaktifkan, atau diurutkan sendiri</div>
+  </div>
+  <div class="page-actions no-print">
+    <button class="btn btn-outline btn-sm" data-print="portrait">🖨 Cetak A4</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel('tblStages','tahapan-project',{title:'Tahapan Tracking Project',sheet:'Tahapan',by:'<%= user.name %>'})">⬇ Excel</button>
+    <a class="btn btn-light btn-sm" href="<%= url('/projects') %>">Ke Tracking Project</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<% if (perm.settings) { %>
+<div class="card no-print">
+  <div class="card-head"><h3>➕ Tambah Tahapan Baru</h3></div>
+  <div class="card-body">
+    <form method="post" action="<%= url('/master/tahapan/save') %>">
+      <input type="hidden" name="id" value="0">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nama Tahapan <span class="req">*</span></label>
+          <input type="text" name="name" required placeholder="cth: Bordir Nama, Press &amp; Setrika, Ambil di Toko">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <label class="check"><input type="checkbox" name="active" value="1" checked> <span>Aktifkan untuk project baru</span></label>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="margin-top:12px">Tambah Tahapan</button>
+      <span class="subtext" style="margin-left:10px">Tahapan baru otomatis ditambahkan ke semua project yang masih berjalan.</span>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="tbl" id="tblStages">
+        <thead><tr><th style="width:60px">Urutan</th><th>Nama Tahapan</th><th class="num">Dipakai di</th><th>Status</th><th class="no-export no-print">Aksi</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="5"><div class="empty">Belum ada tahapan.</div></td></tr><% } %>
+        <% rows.forEach(function(r, i){ %>
+          <tr>
+            <td class="mono">
+              <%= i + 1 %>
+              <% if (perm.settings) { %>
+                <div class="no-print" style="margin-top:4px;display:flex;gap:4px">
+                  <form method="post" action="<%= url('/master/tahapan/' + r.id + '/move') %>" style="display:inline"><input type="hidden" name="dir" value="up"><button class="btn btn-light btn-icon" type="submit" title="Naikkan">↑</button></form>
+                  <form method="post" action="<%= url('/master/tahapan/' + r.id + '/move') %>" style="display:inline"><input type="hidden" name="dir" value="down"><button class="btn btn-light btn-icon" type="submit" title="Turunkan">↓</button></form>
+                </div>
+              <% } %>
+            </td>
+            <td>
+              <% if (perm.settings) { %>
+                <form method="post" action="<%= url('/master/tahapan/save') %>" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="hidden" name="id" value="<%= r.id %>">
+                  <input type="hidden" name="sort_order" value="<%= r.sort_order %>">
+                  <input type="text" name="name" value="<%= r.name %>" style="max-width:280px" required>
+                  <label class="check"><input type="checkbox" name="active" value="1" <%= r.active ? 'checked' : '' %>> <span>aktif</span></label>
+                  <button class="btn btn-light btn-sm" type="submit">Simpan</button>
+                </form>
+              <% } else { %><%= r.name %><% } %>
+            </td>
+            <td class="num mono"><%= r.dipakai %> project</td>
+            <td><% if (r.active) { %><span class="badge b-green">Aktif</span><% } else { %><span class="badge b-grey">Nonaktif</span><% } %></td>
+            <td class="no-export no-print">
+              <% if (perm.settings) { %>
+                <form method="post" action="<%= url('/master/tahapan/' + r.id + '/delete') %>" style="display:inline" data-confirm="Hapus tahapan <%= r.name %>?">
+                  <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+                </form>
+              <% } else { %><span class="subtext">—</span><% } %>
+            </td>
+          </tr>
+        <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/foot') %>

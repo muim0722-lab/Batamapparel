@@ -1,0 +1,108 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= project ? 'Edit Project' : 'Project Baru' %></h1>
+    <div class="sub">Data order custom jersey <%= project ? '— ' + project.code : '' %></div>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-outline btn-sm" href="<%= project ? url('/projects/' + project.id) : url('/projects') %>">← Kembali</a>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+
+<form method="post" action="<%= project ? url('/projects/' + project.id + '/edit') : url('/projects') %>">
+  <div class="card">
+    <div class="card-head"><h3>Informasi Project</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Kode Project <span class="req">*</span></label>
+          <input type="text" name="code" value="<%= project ? project.code : nextCode %>" required>
+          <div class="help">Otomatis dibuat, bisa diganti manual.</div>
+        </div>
+        <div class="field">
+          <label>Nama Project / Order <span class="req">*</span></label>
+          <input type="text" name="name" value="<%= project ? project.name : '' %>" required placeholder="cth: Jersey Futsal Garuda FC">
+        </div>
+        <div class="field">
+          <label>Customer</label>
+          <select name="customer_id">
+            <option value="">— pilih customer —</option>
+            <% customers.forEach(function(c){ %>
+              <option value="<%= c.id %>" <%= project && String(project.customer_id) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }); %>
+          </select>
+          <div class="help">Belum ada? Tambahkan di menu Data Master → Customer.</div>
+        </div>
+        <div class="field">
+          <label>Jenis Olahraga / Kegunaan</label>
+          <input type="text" name="sport" id="inpSport" value="<%= project ? project.sport || '' : '' %>" list="sportList" placeholder="cth: FUTSAL/SEPAK BOLA">
+          <datalist id="sportList">
+            <% settingList('sport_options').forEach(function(o){ %><option value="<%= o %>"></option><% }); %>
+          </datalist>
+          <div class="help">Terlihat oleh customer di halaman tracking mereka.</div>
+        </div>
+        <div class="field">
+          <label>Jenis Bahan</label>
+          <input type="text" name="fabrics" id="inpFabrics" value="<%= project ? project.fabrics || '' : '' %>" list="fabricList" placeholder="cth: DRYFIT MILANO">
+          <datalist id="fabricList">
+            <% settingList('fabric_options').forEach(function(o){ %><option value="<%= o %>"></option><% }); %>
+          </datalist>
+        </div>
+        <div class="field">
+          <label>Jumlah (pcs)</label>
+          <input type="number" name="qty" min="0" step="1" value="<%= project ? util.num(project.qty) : '' %>" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Tanggal Order <span class="req">*</span></label>
+          <input type="date" name="order_date" value="<%= project ? project.order_date : util.todayISO() %>" required>
+        </div>
+        <div class="field">
+          <label>Deadline / Target Selesai</label>
+          <input type="date" name="deadline" value="<%= project ? (project.deadline || '') : '' %>">
+          <div class="help">Dipakai sistem untuk alarm &amp; popup peringatan (H-<%= warnDays %>).</div>
+        </div>
+        <div class="field">
+          <label>Prioritas</label>
+          <select name="priority">
+            <% PRIORITY.forEach(function(s){ %>
+              <option value="<%= s %>" <%= project && project.priority === s ? 'selected' : '' %>><%= s === 'Urgent' ? '🔥 Urgent' : 'Normal' %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status Project</label>
+          <select name="status">
+            <% STATUS.forEach(function(s){ %>
+              <option value="<%= s %>" <%= project && project.status === s ? 'selected' : (project ? false : (s === 'Baru')) %>><%= s %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nilai Project (Rp)</label>
+          <input type="text" class="money" name="total_price" value="<%= project ? util.num(project.total_price) : '' %>" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Ekspedisi / Kurir</label>
+          <input type="text" name="courier" value="<%= project ? project.courier || '' : '' %>" placeholder="cth: JNE / J&T / Ambil sendiri">
+        </div>
+        <div class="field">
+          <label>No. Resi / Tracking</label>
+          <input type="text" name="tracking_no" value="<%= project ? project.tracking_no || '' : '' %>" placeholder="nomor resi pengiriman">
+        </div>
+        <div class="field span-2">
+          <label>Keterangan Order</label>
+          <textarea name="description" placeholder="detail bahan, ukuran, nama punggung, dll"><%= project ? project.description || '' : '' %></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body" style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-primary" type="submit"><%= project ? 'Simpan Perubahan' : 'Simpan & Buat Tahapan Tracking' %></button>
+      <a class="btn btn-outline" href="<%= project ? url('/projects/' + project.id) : url('/projects') %>">Batal</a>
+      <% if (!project) { %><span class="subtext">Sistem otomatis membuat 8 tahapan tracking dan mengirim pengingat bila deadline &lt; <%= warnDays %> hari.</span><% } %>
+    </div>
+  </div>
+</form>
+<%- include('../partials/foot') %>
